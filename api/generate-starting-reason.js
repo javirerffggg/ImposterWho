@@ -1,15 +1,19 @@
 // api/generate-starting-reason.js
 
-// Esta función genera una razón creativa y divertida para que un jugador comience la ronda.
-// Se espera una solicitud POST con: { "playerName": "...", "category": "...", "word": "..." }
-
-// Helper function to extract JSON from a string
+// Helper function to robustly extract JSON from a string
 function extractJson(text) {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+        throw new Error("No se encontró un objeto JSON válido en la respuesta de la IA.");
     }
-    throw new Error("No valid JSON found in the API response.");
+    const jsonString = text.substring(firstBrace, lastBrace + 1);
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.error("Malformed JSON string:", jsonString);
+        throw new Error(`Fallo al procesar la respuesta de la IA.`);
+    }
 }
 
 export default async function handler(req, res) {
@@ -17,51 +21,42 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { playerName } = req.body; // Word and category are ignored now
+    const { playerName } = req.body;
     if (!playerName) {
-        return res.status(400).json({ error: 'playerName is required' });
+        return res.status(400).json({ error: 'El nombre del jugador (playerName) es requerido' });
     }
 
     const API_KEY = process.env.GEMINI_API_KEY;
     if (!API_KEY) {
-        return res.status(500).json({ error: 'GEMINI_API_KEY environment variable not set.' });
+        return res.status(500).json({ error: 'La clave de la API de Gemini no está configurada en el servidor.' });
     }
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
-    const prompt = `
-        Para un juego de mesa en España, necesito una frase graciosa para decidir quién empieza.
-        El nombre del jugador es "${playerName}".
-
-        Inventa una frase corta en español, de una sola línea, que sea divertida, que rime con el nombre "${playerName}" y que haga referencia a la cultura popular, dichos, comida o humor de España.
-        La frase NO debe tener ninguna relación con la palabra secreta o la categoría del juego. Debe ser totalmente aleatoria y centrada en el humor.
-
-        Ejemplos de inspiración:
-        - Para "Ana": "Empieza Ana, porque tiene más salero que una sevillana."
-        - Para "Javier": "Empieza Javier, que tiene más hambre que el perro de un ciego y se va a comer un pincho de tortilla."
-        - Para "Lucía": "Empieza Lucía, porque hoy está que lo tira, como los precios del Día sin IVA."
-        - Para "Mateo": "Empieza Mateo, que se conoce todos los bares de tapeo."
-
-        Responde exclusivamente con un objeto JSON con el siguiente formato, sin texto adicional:
-        {"reason": "Tu frase creativa y graciosa aquí"}
-    `;
+    const prompt = `Para un juego de mesa en España, necesito una frase graciosa para decidir quién empieza. El jugador se llama "${playerName}". Inventa una frase corta, de una sola línea, que rime con "${playerName}" y haga referencia a la cultura popular, dichos o humor de España. La frase debe ser totalmente aleatoria y centrada en el humor. Ejemplos: para "Ana", "Empieza Ana, porque tiene más salero que una sevillana."; para "Javier", "Empieza Javier, que se va a comer un pincho de tortilla."; para "Lucía", "Empieza Lucía, porque hoy está que lo tira."; para "Mateo", "Empieza Mateo, que se conoce todos los bares de tapeo.". El JSON de salida debe tener la clave "reason".`;
 
     try {
         const apiResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    response_mime_type: "application/json",
+                }
+            }),
         });
 
-        if (!apiResponse.ok) {
-            const errorText = await apiResponse.text();
-            console.error("Gemini API Error Response:", errorText);
-            throw new Error(`Gemini API error: ${apiResponse.status}`);
-        }
-
         const data = await apiResponse.json();
+
+        if (!apiResponse.ok) {
+            console.error("Gemini API Error Response:", data);
+            const errorMessage = data?.error?.message || `Error de la API de Gemini: ${apiResponse.status}`;
+            throw new Error(errorMessage);
+        }
         
-        if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-            throw new Error("Invalid response structure from Gemini API.");
+        if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts?.[0]?.text) {
+            console.error("Invalid response structure from Gemini:", JSON.stringify(data));
+            throw new Error("Estructura de respuesta inválida o vacía desde la API de Gemini. Puede ser por filtros de seguridad.");
         }
 
         const rawText = data.candidates[0].content.parts[0].text;
@@ -70,7 +65,7 @@ export default async function handler(req, res) {
         res.status(200).json(reasonData);
 
     } catch (error) {
-        console.error('Error in generate-starting-reason function:', error.message);
-        res.status(500).json({ error: 'Failed to generate starting reason. ' + error.message });
+        console.error('Error en la función generate-starting-reason:', error.message);
+        res.status(500).json({ error: 'No se pudo generar la razón de inicio. ' + error.message });
     }
 }
