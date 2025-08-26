@@ -32,13 +32,18 @@ export default async function handler(req, res) {
     }
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
-    const prompt = `Genera una lista de 15 palabras para un juego de mesa sobre el tema "${topic}". Las palabras deben estar en español. Divide las palabras en tres niveles de dificultad: 5 fáciles, 5 medias y 5 difíciles. Las palabras fáciles deben ser muy comunes y directamente relacionadas con el tema. Las palabras medias deben ser un poco más específicas pero aún reconocibles. Las palabras difíciles deben ser técnicas, raras o relacionadas de forma más abstracta. Devuelve el resultado exclusivamente en formato JSON, sin texto adicional antes o después. El formato debe ser: {"easy": ["palabra1", "palabra2", "palabra3", "palabra4", "palabra5"], "medium": ["palabra1", "palabra2", "palabra3", "palabra4", "palabra5"], "hard": ["palabra1", "palabra2", "palabra3", "palabra4", "palabra5"]}`;
+    const prompt = `Para un juego de mesa sobre el tema "${topic}", genera 15 palabras en español divididas en tres niveles de dificultad: 5 fáciles (comunes), 5 medias (específicas), y 5 difíciles (técnicas o raras). El JSON de salida debe tener las claves "easy", "medium", y "hard".`;
 
     try {
         const apiResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    response_mime_type: "application/json",
+                }
+            }),
         });
 
         const data = await apiResponse.json();
@@ -64,4 +69,3 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'No se pudo generar la categoría. ' + error.message });
     }
 }
-```javascript
