@@ -8,209 +8,255 @@
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="theme-color" content="#1c1c1e">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
 
     <!-- Dictionary -->
     <script src="words.js" defer></script>
 
     <style>
         :root {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #b3b3b3;
-            --accent-primary: #8a2be2;
-            --accent-secondary: #4b0082;
-            --card-face-down: #3a3a3a;
-        }
-
-        .theme-space {
-            --bg-primary: #0c0a1a;
-            --bg-secondary: #1d1a3b;
-            --text-primary: #e0e0ff;
-            --text-secondary: #a0a0cc;
-            --accent-primary: #00ffff;
-            --accent-secondary: #00aaff;
-            --card-face-down: #2c2a4b;
-        }
-
-        .theme-fantasy {
-            --bg-primary: #2d1e2f;
-            --bg-secondary: #452842;
-            --text-primary: #f0e6f2;
-            --text-secondary: #c8b8ca;
-            --accent-primary: #ffaa00;
-            --accent-secondary: #8b4513;
-            --card-face-down: #5d3a5a;
-        }
-        
-        .theme-noir {
-            --bg-primary: #1c1c1c;
-            --bg-secondary: #333333;
+            --bg-primary: #1c1c1e;
+            --bg-secondary: rgba(42, 42, 45, 0.85);
+            --bg-secondary-opaque: #2a2a2d;
             --text-primary: #e6e6e6;
-            --text-secondary: #a0a0a0;
-            --accent-primary: #ff3333;
-            --accent-secondary: #8b0000;
-            --card-face-down: #444444;
+            --text-secondary: #8e8e93;
+            --accent-color: #0A84FF;
+            --accent-highlight: #3395ff;
+            --accent-red: #ff3b30;
+            --accent-green: #34c759;
+            --border-color: rgba(230, 230, 230, 0.2);
+            --separator-color: rgba(84, 84, 88, 0.65);
+            --shadow-color: rgba(0,0,0,0.5);
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Card flip animation */
-        .card {
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
+        .font-title {
+            font-family: 'Be Vietnam Pro', sans-serif;
         }
-        .card.is-flipped {
-            transform: rotateY(180deg);
+
+        .liquid-glass {
+            background-color: var(--bg-secondary);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 20px var(--shadow-color);
         }
-        .card-face {
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
+
+        .liquid-button {
+            background-color: rgba(58, 58, 60, 0.7);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
-        .card-face-back {
-            transform: rotateY(180deg);
+        .liquid-button:hover {
+            background-color: rgba(72, 72, 74, 0.8);
+        }
+
+        .liquid-input {
+            background-color: var(--bg-secondary-opaque);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .liquid-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 0 0 2px rgba(10, 132, 255, 0.5);
         }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: var(--accent-secondary); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+        /* Card flip animation */
+        .flip-card { perspective: 1000px; }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .card-face-back { transform: rotateY(180deg); }
+        
+        .reveal-footer-button {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            transition-delay: 0.6s;
+        }
+        .flip-card.is-flipped + .reveal-footer-button {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
-<body class="bg-[var(--bg-primary)] text-[var(--text-primary)] min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen">
 
     <!-- ===== CONFIG SCREEN ===== -->
-    <div id="config-screen" class="w-full max-w-2xl mx-auto">
-        <div class="bg-[var(--bg-secondary)] p-6 md:p-8 rounded-2xl shadow-2xl">
-            <h1 class="text-4xl font-bold text-center mb-2 text-[var(--accent-primary)]">Imposter Who?</h1>
-            <p class="text-center text-[var(--text-secondary)] mb-8">Configura la partida para empezar a jugar.</p>
-
-            <!-- Player Management -->
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold mb-3">Jugadores</h2>
-                <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                    <input type="text" id="player-name-input" placeholder="Nombre del jugador..." class="flex-grow bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent-primary)] transition">
-                    <input type="color" id="player-color-input" value="#8a2be2" class="w-full sm:w-16 h-12 rounded-lg cursor-pointer bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)]">
-                    <button id="add-player-btn" class="bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white font-bold py-2 px-6 rounded-lg transition duration-300">Añadir</button>
-                </div>
-                <div id="player-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
-            </div>
-
-            <!-- Game Options -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                    <h2 class="text-xl font-semibold mb-3">Opciones de Partida</h2>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <label for="impostor-count" class="text-[var(--text-secondary)]">Nº Impostores:</label>
-                            <select id="impostor-count" class="bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-3 py-1">
-                                <option value="1">1</option>
-                            </select>
+    <div id="config-screen" class="w-full max-w-lg mx-auto">
+        <div class="relative flex size-full min-h-screen flex-col justify-between">
+            <div>
+                <header class="text-center p-4 sticky top-0 bg-black/30 backdrop-blur-md z-10 border-b border-[var(--separator-color)]">
+                    <h1 class="text-lg font-semibold">Configurar Partida</h1>
+                </header>
+                <main class="p-4 space-y-6 pb-24">
+                    <section class="liquid-glass p-4">
+                        <h2 class="text-xl font-bold mb-4">Jugadores</h2>
+                        <div class="flex items-center gap-2 mb-4">
+                            <input id="player-name-input" type="text" class="form-input flex-1 liquid-input rounded-xl h-12 px-4 text-base focus:ring-0 text-[var(--text-primary)]" placeholder="Nombre del jugador..."/>
+                            <input type="color" id="player-color-input" value="#0A84FF" class="w-12 h-12 rounded-xl cursor-pointer liquid-input p-1">
+                            <button id="add-player-btn" class="bg-[var(--accent-color)] h-12 w-12 flex items-center justify-center rounded-xl shadow-[0_2px_8px_rgba(10,132,255,0.4)]">
+                                <span class="material-symbols-outlined text-3xl text-white">add</span>
+                            </button>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <label for="difficulty" class="text-[var(--text-secondary)]">Dificultad:</label>
-                            <select id="difficulty" class="bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-3 py-1">
-                                <option value="random">Aleatoria</option>
-                                <option value="easy">Fácil</option>
-                                <option value="medium">Media</option>
-                                <option value="hard">Difícil</option>
-                            </select>
+                        <div id="player-list" class="space-y-0.5 divide-y divide-[var(--separator-color)]">
+                            <!-- Player list injected here -->
                         </div>
-                        <div class="flex items-center justify-between">
-                            <label for="theme-selector" class="text-[var(--text-secondary)]">Tema Visual:</label>
-                            <select id="theme-selector" class="bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-3 py-1">
-                                <option value="theme-dark">Oscuro</option>
-                                <option value="theme-space">Espacial</option>
-                                <option value="theme-fantasy">Fantasía</option>
-                                <option value="theme-noir">Noir</option>
-                            </select>
+                    </section>
+
+                    <section class="liquid-glass p-4">
+                        <h2 class="text-xl font-bold mb-4">Opciones</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-base font-medium mb-2 block" for="impostor-count">Número de Impostores</label>
+                                <select id="impostor-count" class="form-select w-full liquid-input rounded-xl h-12 px-4 focus:ring-0">
+                                    <option value="1">1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-base font-medium mb-2 block" for="difficulty">Dificultad</label>
+                                <select id="difficulty" class="form-select w-full liquid-input rounded-xl h-12 px-4 focus:ring-0">
+                                    <option value="random">Aleatoria</option>
+                                    <option value="easy">Fácil</option>
+                                    <option value="medium">Media</option>
+                                    <option value="hard">Difícil</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div>
-                    <h2 class="text-xl font-semibold mb-3">Modos de Juego</h2>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="impostor-hint-mode" class="h-5 w-5 rounded accent-[var(--accent-primary)]"><span>💡 Pista para Impostores</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="troll-mode" class="h-5 w-5 rounded accent-[var(--accent-primary)]"><span>🤡 Modo Troll</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="detective-mode" class="h-5 w-5 rounded accent-[var(--accent-primary)]"><span>🕵️ Modo Detective</span></label>
-                    </div>
-                </div>
-            </div>
+                    </section>
+                    
+                    <section class="liquid-glass p-4">
+                        <h2 class="text-xl font-bold mb-3">Modos de Juego</h2>
+                        <div class="grid grid-cols-1 divide-y divide-[var(--separator-color)]">
+                            <label class="flex items-center justify-between gap-3 py-3"><span class="text-base flex-1">💡 Pista para Impostor</span><input type="checkbox" id="impostor-hint-mode" class="form-checkbox h-6 w-6 rounded-md bg-transparent border-2 border-[var(--border-color)] checked:bg-[var(--accent-color)] focus:ring-0 focus:ring-offset-0"></label>
+                            <label class="flex items-center justify-between gap-3 py-3"><span class="text-base flex-1">🤡 Modo Troll</span><input type="checkbox" id="troll-mode" class="form-checkbox h-6 w-6 rounded-md bg-transparent border-2 border-[var(--border-color)] checked:bg-[var(--accent-color)] focus:ring-0 focus:ring-offset-0"></label>
+                            <label class="flex items-center justify-between gap-3 py-3"><span class="text-base flex-1">🕵️ Modo Detective</span><input type="checkbox" id="detective-mode" class="form-checkbox h-6 w-6 rounded-md bg-transparent border-2 border-[var(--border-color)] checked:bg-[var(--accent-color)] focus:ring-0 focus:ring-offset-0"></label>
+                        </div>
+                    </section>
 
-            <!-- Categories -->
-            <div class="mb-8">
-                <h2 class="text-xl font-semibold mb-3">Categorías</h2>
-                <div id="category-list" class="max-h-48 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-primary)] rounded-lg">
-                    <!-- Categories will be injected here -->
-                </div>
-                <div class="flex flex-wrap gap-3 mt-4">
-                    <button id="surprise-me-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">✨ Sorpréndeme</button>
-                    <button id="select-all-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">Seleccionar Todas</button>
-                    <button id="ai-category-btn" class="flex-1 bg-[var(--accent-secondary)] hover:bg-[var(--accent-primary)] text-white font-bold py-2 px-4 rounded-lg transition">🤖 Crear con IA</button>
-                </div>
+                    <section class="liquid-glass p-4">
+                        <h2 class="text-xl font-bold mb-3">Categorías</h2>
+                        <div id="category-list" class="max-h-48 overflow-y-auto grid grid-cols-1 divide-y divide-[var(--separator-color)] pr-2">
+                            <!-- Categories will be injected here -->
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                            <button id="surprise-me-btn" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 liquid-button text-[var(--text-primary)] text-sm font-semibold rounded-xl">✨ Sorpréndeme</button>
+                            <button id="select-all-btn" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 liquid-button text-[var(--text-primary)] text-sm font-semibold rounded-xl">Seleccionar Todas</button>
+                        </div>
+                        <button id="ai-category-btn" class="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 liquid-button text-[var(--text-primary)] text-sm font-semibold rounded-xl">🤖 Crear con IA</button>
+                    </section>
+                </main>
             </div>
-
-            <!-- Start Game -->
-            <button id="start-game-btn" class="w-full bg-[var(--accent-primary)] text-white font-bold text-xl py-4 rounded-lg transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed">Asignar Roles</button>
+            <footer class="p-4 sticky bottom-0 bg-black/30 backdrop-blur-md border-t border-[var(--separator-color)]">
+                <button id="start-game-btn" class="w-full py-4 text-center bg-[var(--accent-color)] text-white text-lg font-bold rounded-xl shadow-[0_4px_15px_rgba(10,132,255,0.5)] disabled:bg-[rgba(58,58,60,0.8)] disabled:text-[var(--text-secondary)] disabled:shadow-none">Asignar Roles</button>
+            </footer>
         </div>
     </div>
 
     <!-- ===== ROLE REVEAL SCREEN ===== -->
-    <div id="reveal-screen" class="w-full max-w-md mx-auto hidden">
-        <div class="text-center">
-            <p class="text-xl text-[var(--text-secondary)] mb-2">Pásale el móvil a:</p>
-            <h2 id="current-player-name" class="text-4xl font-bold mb-6"></h2>
-            <p class="text-lg text-[var(--text-secondary)] mb-4">Toca la tarjeta para ver tu rol</p>
-
-            <div id="role-card" class="card w-full h-80 perspective-1000 cursor-pointer">
-                <!-- Card Front -->
-                <div class="card-face absolute w-full h-full flex items-center justify-center bg-[var(--card-face-down)] rounded-2xl shadow-xl border-4 border-[var(--accent-secondary)]">
-                    <span class="text-6xl">?</span>
+    <div id="reveal-screen" class="w-full max-w-lg mx-auto hidden">
+        <div class="relative flex size-full min-h-screen flex-col justify-between">
+            <main class="flex flex-col items-center justify-center flex-grow px-4 text-center">
+                <p class="text-[var(--text-secondary)] text-lg mb-2">Pásale el móvil a:</p>
+                <h2 id="current-player-name" class="text-4xl font-bold mb-8"></h2>
+                
+                <div id="role-card" class="flip-card w-full max-w-xs aspect-[3/4.5] cursor-pointer">
+                    <div class="flip-card-inner">
+                        <div class="card-face card-face-front liquid-glass">
+                            <span class="material-symbols-outlined text-8xl text-[var(--text-secondary)]">contact_support</span>
+                            <h3 class="text-2xl font-semibold mt-4">Imposter Who?</h3>
+                            <p class="text-[var(--text-secondary)] mt-2">Toca para Revelar</p>
+                        </div>
+                        <div id="card-back-content" class="card-face card-face-back liquid-glass p-6">
+                            <!-- Content injected by JS -->
+                        </div>
+                    </div>
                 </div>
-                <!-- Card Back -->
-                <div id="card-back-content" class="card-face card-face-back absolute w-full h-full p-6 flex flex-col items-center justify-center bg-[var(--bg-secondary)] rounded-2xl shadow-xl border-4 border-[var(--accent-primary)]">
-                    <!-- Content injected by JS -->
-                </div>
-            </div>
-
-            <button id="next-player-btn" class="mt-8 w-full bg-[var(--accent-primary)] text-white font-bold text-xl py-4 rounded-lg transition duration-300 opacity-0 invisible">Siguiente Jugador</button>
+            </main>
+            <footer class="p-4 reveal-footer-button">
+                <button id="next-player-btn" class="flex w-full max-w-sm mx-auto items-center justify-center rounded-xl h-12 px-5 bg-black/20 backdrop-blur-sm text-[var(--accent-color)] text-lg font-semibold border border-white/10">
+                    Siguiente Jugador
+                </button>
+            </footer>
         </div>
     </div>
     
     <!-- ===== GAME SCREEN ===== -->
-    <div id="game-screen" class="w-full max-w-md mx-auto text-center hidden">
-        <div class="bg-[var(--bg-secondary)] p-8 rounded-2xl shadow-2xl">
-            <h2 class="text-3xl font-bold mb-4">¡A jugar!</h2>
-            <p id="starting-player-announcement" class="text-xl text-[var(--text-secondary)] mb-8"></p>
-            <div id="final-reveal-info" class="hidden text-left space-y-4 mb-8 p-4 bg-[var(--bg-primary)] rounded-lg">
-                <p class="text-lg">La palabra era: <strong id="final-word" class="text-[var(--accent-primary)]"></strong></p>
-                <div id="final-impostors"></div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <button id="reveal-roles-btn" class="w-full bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white font-bold py-3 px-6 rounded-lg transition">Revelar Roles y Palabra</button>
-                <button id="new-game-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition">Jugar de Nuevo</button>
-            </div>
+    <div id="game-screen" class="w-full max-w-lg mx-auto hidden">
+        <div class="relative flex size-full min-h-screen flex-col justify-between">
+            <main class="flex-grow flex flex-col justify-center px-6 py-8">
+                <div class="text-center mb-10">
+                    <h1 class="font-title text-5xl font-black tracking-tighter drop-shadow-lg">¡A Jugar!</h1>
+                    <p class="text-base text-[var(--text-secondary)] mt-2 drop-shadow-sm">Escucha con atención. El impostor está entre nosotros.</p>
+                </div>
+                <div class="liquid-glass p-6 space-y-6">
+                    <div class="text-center">
+                        <p class="text-sm font-medium uppercase tracking-wider text-[var(--text-secondary)]">Empieza la ronda</p>
+                        <div class="flex items-center justify-center gap-4 mt-3">
+                            <div id="starting-player-avatar" class="h-16 w-16 rounded-full border-2 border-[var(--accent-color)] shadow-lg" style="box-shadow: 0 0 15px var(--accent-color-shadow, rgba(10, 132, 255, 0.5));"></div>
+                            <p id="starting-player-announcement" class="font-title text-3xl font-bold text-[var(--accent-highlight)] drop-shadow-md"></p>
+                        </div>
+                    </div>
+                    <div id="reason-container" class="text-center bg-black/20 p-4 rounded-2xl shadow-inner shadow-black/30 min-h-[6rem] flex flex-col justify-center">
+                        <p id="starting-player-reason" class="text-lg italic drop-shadow-sm"></p>
+                        <p id="reason-label" class="text-xs font-semibold uppercase tracking-widest text-[var(--text-secondary)] mt-3 hidden">Razón Generada por IA</p>
+                    </div>
+                    <div id="final-reveal-info" class="hidden text-left space-y-2 pt-4 border-t border-[var(--separator-color)]">
+                         <p class="text-lg">La palabra era: <strong id="final-word" class="text-[var(--accent-highlight)]"></strong></p>
+                         <div id="final-impostors"></div>
+                    </div>
+                </div>
+            </main>
+            <footer class="px-6 pb-8 pt-4 sticky bottom-0">
+                <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)] to-transparent -z-10"></div>
+                <button id="reveal-roles-btn" class="w-full flex items-center justify-center gap-3 rounded-2xl h-14 px-5 bg-black/20 text-[var(--accent-color)] text-lg font-bold tracking-wide shadow-lg backdrop-blur-lg border border-[var(--border-color)] hover:bg-black/30 transition-all">
+                    <span class="material-symbols-outlined">visibility</span>
+                    <span>Revelar Roles y Palabra</span>
+                </button>
+                 <button id="new-game-btn" class="mt-4 w-full flex items-center justify-center gap-3 rounded-2xl h-14 px-5 bg-black/20 text-[var(--text-secondary)] text-lg font-bold tracking-wide shadow-lg backdrop-blur-lg border border-[var(--border-color)] hover:bg-black/30 transition-all">
+                    <span class="material-symbols-outlined">refresh</span>
+                    <span>Jugar de Nuevo</span>
+                </button>
+            </footer>
         </div>
     </div>
     
     <!-- Loading/Modal Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
         <div class="text-white text-2xl animate-pulse">Generando con IA...</div>
     </div>
 
@@ -223,11 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         impostorCount: 1,
         difficulty: 'random',
         selectedCategories: new Set(),
-        gameModes: {
-            impostorHint: false,
-            troll: false,
-            detective: false,
-        },
+        gameModes: { impostorHint: false, troll: false, detective: false },
         roles: {},
         secretWord: '',
         secretCategory: '',
@@ -236,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameStarted: false,
         startingPlayer: null,
         hintForImpostorAvailable: false,
+        generatedWordsCache: {}, // Cache for AI-generated words
     };
 
     // --- DOM ELEMENTS ---
@@ -250,7 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerList = document.getElementById('player-list');
     const impostorCountSelect = document.getElementById('impostor-count');
     const difficultySelect = document.getElementById('difficulty');
-    const themeSelector = document.getElementById('theme-selector');
     const categoryList = document.getElementById('category-list');
     const surpriseMeBtn = document.getElementById('surprise-me-btn');
     const selectAllBtn = document.getElementById('select-all-btn');
@@ -264,6 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardBackContent = document.getElementById('card-back-content');
     const nextPlayerBtn = document.getElementById('next-player-btn');
     const startingPlayerAnnouncement = document.getElementById('starting-player-announcement');
+    const startingPlayerAvatar = document.getElementById('starting-player-avatar');
+    const startingPlayerReason = document.getElementById('starting-player-reason');
+    const reasonLabel = document.getElementById('reason-label');
     const revealRolesBtn = document.getElementById('reveal-roles-btn');
     const newGameBtn = document.getElementById('new-game-btn');
     const finalRevealInfo = document.getElementById('final-reveal-info');
@@ -283,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
+                    .then(reg => console.log('ServiceWorker registration successful'))
                     .catch(err => console.log('ServiceWorker registration failed: ', err));
             });
         }
@@ -295,16 +340,9 @@ document.addEventListener('DOMContentLoaded', () => {
         playerNameInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') addPlayer();
         });
-        impostorCountSelect.addEventListener('change', () => {
-            state.impostorCount = parseInt(impostorCountSelect.value);
-        });
-        difficultySelect.addEventListener('change', () => {
-            state.difficulty = difficultySelect.value;
-        });
-        themeSelector.addEventListener('change', (e) => {
-            document.body.className = e.target.value + ' bg-[var(--bg-primary)] text-[var(--text-primary)] min-h-screen flex items-center justify-center p-4';
-        });
-        surpriseMeBtn.addEventListener('click', selectRandomCategory);
+        impostorCountSelect.addEventListener('change', (e) => state.impostorCount = parseInt(e.target.value));
+        difficultySelect.addEventListener('change', (e) => state.difficulty = e.target.value);
+        surpriseMeBtn.addEventListener('click', handleSurpriseMeClick);
         selectAllBtn.addEventListener('click', toggleSelectAllCategories);
         aiCategoryBtn.addEventListener('click', handleAICategoryGeneration);
         impostorHintMode.addEventListener('change', (e) => state.gameModes.impostorHint = e.target.checked);
@@ -314,9 +352,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateUI();
         });
         startGameBtn.addEventListener('click', startGame);
-        roleCard.addEventListener('click', flipCard);
+        roleCard.addEventListener('click', () => roleCard.classList.toggle('is-flipped'));
         nextPlayerBtn.addEventListener('click', nextPlayer);
-        revealRolesBtn.addEventListener('click', showFinalReveal);
+        revealRolesBtn.addEventListener('click', handleRevealRolesClick);
         newGameBtn.addEventListener('click', resetForNewGame);
     }
 
@@ -336,18 +374,18 @@ document.addEventListener('DOMContentLoaded', () => {
         playerList.innerHTML = '';
         state.players.forEach((player, index) => {
             const playerEl = document.createElement('div');
-            playerEl.className = 'flex items-center justify-between bg-[var(--bg-primary)] p-2 rounded-lg';
+            playerEl.className = 'flex items-center gap-4 py-2';
             playerEl.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded-full" style="background-color: ${player.color};"></div>
-                    <span class="truncate">${player.name}</span>
-                </div>
-                <button data-index="${index}" class="remove-player-btn text-red-500 hover:text-red-700 font-bold">X</button>
+                <div class="size-10 rounded-full" style="background-color: ${player.color};"></div>
+                <p class="text-base font-medium flex-1">${player.name}</p>
+                <button data-index="${index}" class="remove-player-btn text-[var(--text-secondary)]">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
             `;
             playerList.appendChild(playerEl);
         });
         document.querySelectorAll('.remove-player-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => removePlayer(parseInt(e.target.dataset.index)));
+            btn.addEventListener('click', (e) => removePlayer(parseInt(e.currentTarget.dataset.index)));
         });
     }
 
@@ -372,32 +410,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateCategories(newCategory = null) {
         if (newCategory) {
-            WORD_CATEGORIES[newCategory.name] = newCategory.words;
+            WORD_CATEGORIES[newCategory.name] = {}; // Add new category placeholder
+            state.generatedWordsCache[newCategory.name] = newCategory.words;
         }
-
         const categoryNames = Object.keys(WORD_CATEGORIES);
         categoryList.innerHTML = '';
         categoryNames.forEach(cat => {
             const label = document.createElement('label');
-            label.className = 'flex items-center gap-2 p-2 bg-[var(--bg-secondary)] rounded-md cursor-pointer hover:bg-[var(--accent-secondary)] transition';
+            label.className = 'flex items-center gap-3 py-3 cursor-pointer';
             label.innerHTML = `
-                <input type="checkbox" data-category="${cat}" class="category-checkbox h-5 w-5 rounded accent-[var(--accent-primary)]">
-                <span>${cat}</span>
+                <input type="checkbox" data-category="${cat}" class="category-checkbox form-checkbox size-6 border-2 focus:ring-0 focus:ring-offset-0 bg-transparent border-[var(--border-color)] checked:bg-[var(--accent-color)]"/>
+                <span class="text-base flex-1">${cat}</span>
             `;
             categoryList.appendChild(label);
         });
-        
         document.querySelectorAll('.category-checkbox').forEach(box => {
             if (state.selectedCategories.has(box.dataset.category)) {
                 box.checked = true;
             }
             box.addEventListener('change', (e) => {
                 const category = e.target.dataset.category;
-                if (e.target.checked) {
-                    state.selectedCategories.add(category);
-                } else {
-                    state.selectedCategories.delete(category);
-                }
+                if (e.target.checked) state.selectedCategories.add(category);
+                else state.selectedCategories.delete(category);
                 updateStartButtonState();
             });
         });
@@ -420,83 +454,105 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- CATEGORY MANAGEMENT ---
-    function selectRandomCategory() {
-        const checkboxes = document.querySelectorAll('.category-checkbox');
-        checkboxes.forEach(box => box.checked = false);
-        state.selectedCategories.clear();
-
-        const randomIndex = Math.floor(Math.random() * checkboxes.length);
-        checkboxes[randomIndex].checked = true;
-        state.selectedCategories.add(checkboxes[randomIndex].dataset.category);
-        updateStartButtonState();
+    async function handleSurpriseMeClick() {
+        loadingOverlay.classList.remove('hidden');
+        try {
+            const response = await fetch('/api/generate-random-category', { method: 'POST' });
+            if (!response.ok) throw new Error('No se pudo generar la categoría sorpresa.');
+            const newCategory = await response.json();
+            populateCategories({ name: newCategory.name, words: newCategory.words });
+            state.selectedCategories.clear();
+            document.querySelectorAll('.category-checkbox').forEach(box => box.checked = false);
+            const newCheckbox = document.querySelector(`.category-checkbox[data-category="${newCategory.name}"]`);
+            if (newCheckbox) {
+                newCheckbox.checked = true;
+                state.selectedCategories.add(newCategory.name);
+            }
+            updateStartButtonState();
+            alert(`¡Categoría sorpresa "${newCategory.name}" creada y seleccionada!`);
+        } catch (error) {
+            console.error('Error getting surprise category:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
     }
-    
+
     function toggleSelectAllCategories() {
         const checkboxes = document.querySelectorAll('.category-checkbox');
         const allSelected = checkboxes.length > 0 && Array.from(checkboxes).every(box => box.checked);
-
         checkboxes.forEach(box => {
             box.checked = !allSelected;
             const category = box.dataset.category;
-            if (!allSelected) {
-                state.selectedCategories.add(category);
-            } else {
-                state.selectedCategories.delete(category);
-            }
+            if (!allSelected) state.selectedCategories.add(category);
+            else state.selectedCategories.delete(category);
         });
         updateStartButtonState();
     }
 
     // --- GAME LOGIC ---
-    function startGame() {
+    async function startGame() {
         state.gameStarted = true;
-        assignRoles();
-        
-        // Determine starting player AFTER roles are assigned
-        state.startingPlayer = state.players[Math.floor(Math.random() * state.players.length)];
-        
-        // Check if hint is available for the starting player
-        state.hintForImpostorAvailable = state.gameModes.impostorHint &&
-                                        state.roles[state.startingPlayer.name].role === 'Impostor';
-
-        state.currentPlayerIndex = 0;
-        setupRevealScreen();
-        switchScreen('reveal');
+        loadingOverlay.classList.remove('hidden');
+        try {
+            await assignRoles();
+            state.startingPlayer = state.players[Math.floor(Math.random() * state.players.length)];
+            state.hintForImpostorAvailable = state.gameModes.impostorHint && state.roles[state.startingPlayer.name].role === 'Impostor';
+            state.currentPlayerIndex = 0;
+            setupRevealScreen();
+            switchScreen('reveal');
+        } catch (error) {
+            console.error("Error starting game:", error);
+            alert("No se pudieron generar las palabras para la partida. Revisa la conexión o inténtalo de nuevo.");
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
     }
 
-    function assignRoles() {
-        // Word selection
+    async function assignRoles() {
         const availableCategories = Array.from(state.selectedCategories);
         state.secretCategory = availableCategories[Math.floor(Math.random() * availableCategories.length)];
         
-        const wordsInCat = WORD_CATEGORIES[state.secretCategory];
-        let difficultyPool = [];
-        if (state.difficulty === 'random') {
-            difficultyPool = [...wordsInCat.easy, ...wordsInCat.medium, ...wordsInCat.hard];
+        // --- DYNAMIC WORD GENERATION ---
+        let wordsInCat;
+        if (state.generatedWordsCache[state.secretCategory]) {
+            console.log(`Using cached words for ${state.secretCategory}`);
+            wordsInCat = state.generatedWordsCache[state.secretCategory];
         } else {
-            difficultyPool = wordsInCat[state.difficulty];
+            console.log(`Fetching new words for ${state.secretCategory}`);
+            try {
+                const response = await fetch('/api/generate-category', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic: state.secretCategory }),
+                });
+                if (!response.ok) throw new Error('API failed to generate words.');
+                const newWords = await response.json();
+                state.generatedWordsCache[state.secretCategory] = newWords;
+                wordsInCat = newWords;
+            } catch (error) {
+                // Propagate error to be caught by startGame
+                throw new Error(`Failed to fetch words for category ${state.secretCategory}: ${error.message}`);
+            }
         }
+        // --- END DYNAMIC WORD GENERATION ---
+
+        let difficultyPool = (state.difficulty === 'random')
+            ? [...wordsInCat.easy, ...wordsInCat.medium, ...wordsInCat.hard]
+            : wordsInCat[state.difficulty];
         state.secretWord = difficultyPool[Math.floor(Math.random() * difficultyPool.length)];
 
-        // Role assignment
-        let playerNames = state.players.map(p => p.name);
-        playerNames.sort(() => Math.random() - 0.5); // Shuffle players
-
+        let playerNames = state.players.map(p => p.name).sort(() => Math.random() - 0.5);
         state.roles = {};
         const isTrollRound = state.gameModes.troll && Math.random() < 0.15;
-
         if (isTrollRound) {
             playerNames.forEach(name => state.roles[name] = { role: 'Impostor', isTroll: true });
             state.lastRoundImpostors = [...playerNames];
             return;
         }
 
-        // Fair impostor selection
         let potentialImpostors = playerNames.filter(name => !state.lastRoundImpostors.includes(name));
-        if (potentialImpostors.length < state.impostorCount) {
-            potentialImpostors = [...playerNames]; // Reset if not enough candidates
-        }
-        
+        if (potentialImpostors.length < state.impostorCount) potentialImpostors = [...playerNames];
         const impostors = [];
         while (impostors.length < state.impostorCount) {
             const idx = Math.floor(Math.random() * potentialImpostors.length);
@@ -511,13 +567,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         playerNames.forEach(name => {
-            if (impostors.includes(name)) {
-                state.roles[name] = { role: 'Impostor' };
-            } else if (name === detective) {
-                state.roles[name] = { role: 'Detective' };
-            } else {
-                state.roles[name] = { role: 'Civil' };
-            }
+            if (impostors.includes(name)) state.roles[name] = { role: 'Impostor' };
+            else if (name === detective) state.roles[name] = { role: 'Detective' };
+            else state.roles[name] = { role: 'Civil' };
         });
     }
 
@@ -525,9 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const player = state.players[state.currentPlayerIndex];
         currentPlayerName.textContent = player.name;
         currentPlayerName.style.color = player.color;
-        
         roleCard.classList.remove('is-flipped');
-        nextPlayerBtn.classList.add('opacity-0', 'invisible');
         updateCardBack(player);
     }
 
@@ -535,92 +585,101 @@ document.addEventListener('DOMContentLoaded', () => {
         const playerRole = state.roles[player.name];
         let content = '';
 
+        const getRoleTranslation = (role) => {
+            if (role === 'Civil') return 'Civil';
+            if (role === 'Detective') return 'Detective';
+            return 'Impostor';
+        }
+
         if (playerRole.role === 'Impostor') {
             content = `
-                <h3 class="text-4xl font-bold text-red-500 mb-4">¡Eres IMPOSTOR!</h3>
-                <p class="text-xl text-[var(--text-secondary)]">Descubre la palabra secreta para ganar.</p>
+                <div class="text-center my-auto">
+                    <h3 class="text-5xl font-bold uppercase tracking-wider text-[var(--accent-red)]" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5)">IMPOSTOR</h3>
+                    <p class="text-[var(--text-secondary)] mt-4">Descubre la palabra secreta.</p>
+                </div>
             `;
             if (state.hintForImpostorAvailable && player.name === state.startingPlayer.name) {
-                content += `<button id="get-hint-btn" class="mt-6 bg-[var(--accent-secondary)] hover:bg-[var(--accent-primary)] text-white font-bold py-2 px-4 rounded-lg transition">Pedir Pista a la IA (1 uso)</button>`;
+                content += `<button id="get-hint-btn" class="mb-4 bg-white/10 text-white font-semibold py-2 px-4 rounded-lg">Pedir Pista a la IA</button>`;
             }
         } else {
-            const roleColor = playerRole.role === 'Detective' ? 'text-blue-400' : 'text-green-400';
+            const roleColor = playerRole.role === 'Detective' ? 'var(--accent-color)' : 'var(--accent-green)';
             content = `
-                <h3 class="text-4xl font-bold ${roleColor} mb-4">Eres ${playerRole.role.toUpperCase()}</h3>
-                <p class="text-lg text-[var(--text-secondary)]">Categoría: ${state.secretCategory}</p>
-                <p class="text-2xl font-semibold mt-4">La palabra es:</p>
-                <p class="text-5xl font-bold text-[var(--accent-primary)] mt-2">${state.secretWord}</p>
+                <div class="text-left w-full"><p class="text-xs uppercase tracking-wider text-[var(--text-secondary)]">Categoría</p><h4 class="text-xl font-semibold">${state.secretCategory}</h4></div>
+                <div class="text-center my-auto">
+                    <h3 class="text-4xl font-bold uppercase tracking-wider" style="color:${roleColor}; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">${getRoleTranslation(playerRole.role)}</h3>
+                    <p class="text-5xl font-bold mt-4">${state.secretWord}</p>
+                </div>
+                <div class="w-full"></div>
             `;
         }
         cardBackContent.innerHTML = content;
-
         const hintBtn = document.getElementById('get-hint-btn');
-        if (hintBtn) {
-            hintBtn.addEventListener('click', getAIHint);
-        }
-    }
-
-    function flipCard() {
-        if (roleCard.classList.contains('is-flipped')) return;
-        roleCard.classList.add('is-flipped');
-        nextPlayerBtn.classList.remove('opacity-0', 'invisible');
-        nextPlayerBtn.classList.add('transition-opacity', 'duration-500', 'delay-500'); // Smooth appearance
+        if (hintBtn) hintBtn.addEventListener('click', getAIHint);
     }
 
     function nextPlayer() {
         roleCard.classList.remove('is-flipped');
-        
-        // Delay content update until flip animation is done
         setTimeout(() => {
             state.currentPlayerIndex++;
-            if (state.currentPlayerIndex < state.players.length) {
-                setupRevealScreen();
-            } else {
-                showGameScreen();
-            }
-        }, 600); // Match card flip duration
+            if (state.currentPlayerIndex < state.players.length) setupRevealScreen();
+            else showGameScreen();
+        }, 600);
     }
 
-    function showGameScreen() {
-        startingPlayerAnnouncement.innerHTML = `Empieza la ronda <strong style="color: ${state.startingPlayer.color};">${state.startingPlayer.name}</strong>.`;
+    async function showGameScreen() {
+        startingPlayerAnnouncement.textContent = state.startingPlayer.name;
+        startingPlayerAvatar.style.backgroundColor = state.startingPlayer.color;
+        startingPlayerAvatar.style.boxShadow = `0 0 15px ${state.startingPlayer.color}80`;
         finalRevealInfo.classList.add('hidden');
-        revealRolesBtn.textContent = 'Revelar Roles y Palabra';
+        revealRolesBtn.querySelector('span:last-child').textContent = 'Revelar Roles y Palabra';
+        startingPlayerReason.textContent = '✨ Generando una razón creativa...';
+        reasonLabel.classList.add('hidden');
         switchScreen('game');
-    }
 
-    function showFinalReveal() {
-        finalWord.textContent = state.secretWord;
-        
-        let impostorHtml = '<p class="text-lg">Los impostores eran:</p><ul class="list-disc list-inside">';
-        let detectiveHtml = '';
-
-        state.players.forEach(player => {
-            const roleInfo = state.roles[player.name];
-            if (roleInfo.role === 'Impostor') {
-                impostorHtml += `<li style="color: ${player.color};">${player.name}</li>`;
-            }
-            if (roleInfo.role === 'Detective') {
-                detectiveHtml = `<p class="text-lg mt-2">El detective era: <strong style="color: ${player.color};">${player.name}</strong></p>`;
-            }
-        });
-        impostorHtml += '</ul>';
-        
-        if (state.roles[state.players[0].name].isTroll) {
-           impostorHtml = `<p class="text-lg text-red-500 font-bold">¡RONDA TROLL! ¡Todos eran impostores!</p>`;
+        try {
+            const response = await fetch('/api/generate-starting-reason', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerName: state.startingPlayer.name, category: state.secretCategory, word: state.secretWord }),
+            });
+            if (!response.ok) throw new Error('No se pudo obtener la razón de inicio.');
+            const data = await response.json();
+            startingPlayerReason.textContent = `"${data.reason}"`;
+            reasonLabel.classList.remove('hidden');
+        } catch (error) {
+            console.error("Could not get starting reason:", error);
+            startingPlayerReason.textContent = '¡Que comience el juego!';
+            reasonLabel.classList.add('hidden');
         }
-
-        finalImpostors.innerHTML = impostorHtml + detectiveHtml;
-        finalRevealInfo.classList.remove('hidden');
-        revealRolesBtn.textContent = 'Ocultar Roles';
-        revealRolesBtn.onclick = () => {
-            finalRevealInfo.classList.toggle('hidden');
-            revealRolesBtn.textContent = finalRevealInfo.classList.contains('hidden') ? 'Revelar Roles y Palabra' : 'Ocultar Roles';
-            revealRolesBtn.onclick = showFinalReveal; // Reset click handler
-        };
+    }
+    
+    function handleRevealRolesClick() {
+        const isHidden = finalRevealInfo.classList.contains('hidden');
+        const buttonText = revealRolesBtn.querySelector('span:last-child');
+        if (isHidden) {
+            finalWord.textContent = state.secretWord;
+            let impostorHtml = '<p class="text-base text-[var(--text-secondary)]">Los impostores eran:</p><ul class="list-disc list-inside">';
+            let detectiveHtml = '';
+            state.players.forEach(player => {
+                const roleInfo = state.roles[player.name];
+                if (roleInfo.role === 'Impostor') impostorHtml += `<li style="color: ${player.color};">${player.name}</li>`;
+                if (roleInfo.role === 'Detective') detectiveHtml = `<p class="text-base text-[var(--text-secondary)] mt-2">El detective era: <strong style="color: ${player.color};">${player.name}</strong></p>`;
+            });
+            impostorHtml += '</ul>';
+            if (state.players.length > 0 && state.roles[state.players[0].name]?.isTroll) {
+               impostorHtml = `<p class="text-lg text-[var(--accent-red)] font-bold">¡RONDA TROLL! ¡Todos eran impostores!</p>`;
+            }
+            finalImpostors.innerHTML = impostorHtml + detectiveHtml;
+            finalRevealInfo.classList.remove('hidden');
+            buttonText.textContent = 'Ocultar Roles';
+        } else {
+            finalRevealInfo.classList.add('hidden');
+            buttonText.textContent = 'Revelar Roles y Palabra';
+        }
     }
 
     function resetForNewGame() {
-        // Reset game state but keep players and selected categories
+        // DO NOT CLEAR state.generatedWordsCache
         state.roles = {};
         state.secretWord = '';
         state.secretCategory = '';
@@ -628,22 +687,18 @@ document.addEventListener('DOMContentLoaded', () => {
         state.gameStarted = false;
         state.startingPlayer = null;
         state.hintForImpostorAvailable = false;
-
-        // Uncheck game modes
         impostorHintMode.checked = false;
         trollMode.checked = false;
         detectiveMode.checked = false;
         state.gameModes = { impostorHint: false, troll: false, detective: false };
-
         switchScreen('config');
         updateUI();
     }
 
     // --- AI INTEGRATION ---
     async function handleAICategoryGeneration() {
-        const topic = prompt("Introduce el tema para la nueva categoría (ej: 'Superhéroes', 'Frutas Tropicales'):");
+        const topic = prompt("Introduce el tema para la nueva categoría (ej: 'Superhéroes'):");
         if (!topic || topic.trim() === '') return;
-
         loadingOverlay.classList.remove('hidden');
         try {
             const response = await fetch('/api/generate-category', {
@@ -651,53 +706,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ topic }),
             });
-
-            if (!response.ok) {
-                throw new Error(`Error del servidor: ${response.statusText}`);
-            }
-
-            const newCategory = await response.json();
-            populateCategories({ name: topic, words: newCategory });
+            if (!response.ok) throw new Error('No se pudo generar la categoría.');
+            const newWords = await response.json();
+            populateCategories({ name: topic, words: newWords });
             alert(`¡Categoría "${topic}" creada y añadida!`);
-
         } catch (error) {
-            console.error('Error generando categoría con IA:', error);
-            alert('Hubo un problema al crear la categoría. Inténtalo de nuevo.');
+            console.error('Error generating AI category:', error);
+            alert(`Error: ${error.message}`);
         } finally {
             loadingOverlay.classList.add('hidden');
         }
     }
     
     async function getAIHint(event) {
-        event.stopPropagation(); // Prevent card from flipping
+        event.stopPropagation();
         const btn = event.target;
         btn.disabled = true;
         btn.textContent = 'Pensando...';
-        
         try {
             const response = await fetch('/api/generate-hint', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ category: state.secretCategory }),
             });
-
-            if (!response.ok) throw new Error('Failed to get hint');
-            
+            if (!response.ok) throw new Error('No se pudo obtener la pista.');
             const data = await response.json();
-            const hint = data.hint;
-
             const hintEl = document.createElement('p');
             hintEl.className = 'mt-4 text-xl text-yellow-300';
-            hintEl.innerHTML = `<strong>Pista:</strong> ${hint}`;
+            hintEl.innerHTML = `<strong>Pista:</strong> ${data.hint}`;
             btn.replaceWith(hintEl);
-
         } catch (error) {
             console.error('Error getting AI hint:', error);
-            btn.textContent = 'Error. Inténtalo de nuevo.';
+            alert(`Error: ${error.message}`);
+            btn.textContent = 'Reintentar';
             btn.disabled = false;
         }
     }
-
 
     // --- START ---
     initialize();
