@@ -32,26 +32,31 @@ export default async function handler(req, res) {
     }
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
     
-    const prompt = `Para un juego de adivinanzas donde un impostor no conoce la palabra secreta, necesito una pista. La categoría es "${category}". Dame una única palabra en español que sea una pista extremadamente genérica pero plausible para esta categoría. La pista debe ser lo suficientemente vaga como para no revelar ninguna palabra específica, pero lo suficientemente relevante para que el impostor pueda decir algo que no lo delate inmediatamente. No conozco la palabra secreta, solo la categoría. Devuelve el resultado exclusivamente en formato JSON, sin texto adicional, así: {"hint": "palabra_pista"}`;
+    const prompt = `Para un juego de adivinanzas, dame una única palabra en español que sea una pista extremadamente genérica pero plausible para la categoría "${category}". La pista debe ser vaga para no revelar ninguna palabra específica, pero relevante. El JSON de salida debe tener la clave "hint".`;
 
     try {
         const apiResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    response_mime_type: "application/json",
+                }
+            }),
         });
-
-        if (!apiResponse.ok) {
-            const errorText = await apiResponse.text();
-            console.error("Gemini API Error Response:", errorText);
-            throw new Error(`Error de la API de Gemini: ${apiResponse.status}`);
-        }
 
         const data = await apiResponse.json();
 
-        if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+        if (!apiResponse.ok) {
+            console.error("Gemini API Error Response:", data);
+            const errorMessage = data?.error?.message || `Error de la API de Gemini: ${apiResponse.status}`;
+            throw new Error(errorMessage);
+        }
+
+        if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts?.[0]?.text) {
             console.error("Invalid response structure from Gemini:", JSON.stringify(data));
-            throw new Error("Estructura de respuesta inválida desde la API de Gemini.");
+            throw new Error("Estructura de respuesta inválida o vacía desde la API de Gemini. Puede ser por filtros de seguridad.");
         }
         
         const rawText = data.candidates[0].content.parts[0].text;
@@ -64,4 +69,3 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'No se pudo generar la pista. ' + error.message });
     }
 }
-```javascript
