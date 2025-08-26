@@ -266,7 +266,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     const state = {
-        // Round-specific state
         roles: {},
         secretWord: '',
         secretCategory: '',
@@ -275,15 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
         gameStarted: false,
         startingPlayer: null,
         hintForImpostorAvailable: false,
-        
-        // Session-persistent state
         persistentConfig: {
             players: [],
             selectedCategories: new Set(),
             gameModes: { impostorHint: false, troll: false, detective: false },
         },
-        
-        // Word generation cache
         generatedWordsCache: {},
     };
 
@@ -346,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveConfig() {
         const configToSave = {
             ...state.persistentConfig,
-            selectedCategories: Array.from(state.persistentConfig.selectedCategories) // Convert Set to Array for JSON
+            selectedCategories: Array.from(state.persistentConfig.selectedCategories)
         };
         localStorage.setItem('imposterWhoConfig', JSON.stringify(configToSave));
     }
@@ -364,40 +359,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     function addEventListeners() {
         addPlayerBtn.addEventListener('click', addPlayer);
-        playerNameInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') addPlayer();
-        });
-        impostorCountSelect.addEventListener('change', (e) => {
-            // This is not persistent, but we could make it so if desired
-        });
-        difficultySelect.addEventListener('change', (e) => {
-            // This is not persistent
-        });
+        playerNameInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') addPlayer(); });
         surpriseMeBtn.addEventListener('click', handleSurpriseMeClick);
         selectAllBtn.addEventListener('click', toggleSelectAllCategories);
         aiCategoryBtn.addEventListener('click', handleAICategoryGeneration);
-        
-        impostorHintMode.addEventListener('change', (e) => {
-            state.persistentConfig.gameModes.impostorHint = e.target.checked;
-            saveConfig();
-        });
-        trollMode.addEventListener('change', (e) => {
-            state.persistentConfig.gameModes.troll = e.target.checked;
-            saveConfig();
-        });
-        detectiveMode.addEventListener('change', (e) => {
-            state.persistentConfig.gameModes.detective = e.target.checked;
-            saveConfig();
-            updateUI();
-        });
-        
+        impostorHintMode.addEventListener('change', (e) => { state.persistentConfig.gameModes.impostorHint = e.target.checked; saveConfig(); });
+        trollMode.addEventListener('change', (e) => { state.persistentConfig.gameModes.troll = e.target.checked; saveConfig(); });
+        detectiveMode.addEventListener('change', (e) => { state.persistentConfig.gameModes.detective = e.target.checked; saveConfig(); updateUI(); });
         startGameBtn.addEventListener('click', startGame);
-        
-        roleCard.addEventListener('click', () => {
-            roleCard.classList.add('is-flipped');
-            revealFooter.classList.add('is-visible');
-        });
-
+        roleCard.addEventListener('click', () => { roleCard.classList.add('is-flipped'); revealFooter.classList.add('is-visible'); });
         nextPlayerBtn.addEventListener('click', nextPlayer);
         revealRolesBtn.addEventListener('click', handleRevealRolesClick);
         newGameBtn.addEventListener('click', resetForNewGame);
@@ -405,11 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI UPDATE FUNCTIONS ---
     function updateUI() {
-        // Reflect persistent state in UI
         impostorHintMode.checked = state.persistentConfig.gameModes.impostorHint;
         trollMode.checked = state.persistentConfig.gameModes.troll;
         detectiveMode.checked = state.persistentConfig.gameModes.detective;
-        
         renderPlayerList();
         updateImpostorCountOptions();
         updateStartButtonState();
@@ -508,25 +476,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- CATEGORY MANAGEMENT ---
+    // BUG FIX: Centralized function to add any new category to the game state.
+    function addNewCategoryToGame(categoryData, select = false) {
+        populateCategories(categoryData);
+        if (select) {
+            state.persistentConfig.selectedCategories.clear();
+            document.querySelectorAll('.category-checkbox').forEach(box => box.checked = false);
+            const newCheckbox = document.querySelector(`.category-checkbox[data-category="${categoryData.name}"]`);
+            if (newCheckbox) {
+                newCheckbox.checked = true;
+                state.persistentConfig.selectedCategories.add(categoryData.name);
+            }
+            saveConfig();
+        }
+        updateStartButtonState();
+        alert(`¡Categoría "${categoryData.name}" creada y añadida!`);
+    }
+
     async function handleSurpriseMeClick() {
         loadingOverlay.classList.remove('hidden');
         try {
             const response = await fetch('/api/generate-random-category', { method: 'POST' });
             if (!response.ok) throw new Error('No se pudo generar la categoría sorpresa.');
             const newCategory = await response.json();
-            populateCategories({ name: newCategory.name, words: newCategory.words });
-            state.persistentConfig.selectedCategories.clear();
-            document.querySelectorAll('.category-checkbox').forEach(box => box.checked = false);
-            const newCheckbox = document.querySelector(`.category-checkbox[data-category="${newCategory.name}"]`);
-            if (newCheckbox) {
-                newCheckbox.checked = true;
-                state.persistentConfig.selectedCategories.add(newCategory.name);
-            }
-            saveConfig();
-            updateStartButtonState();
-            alert(`¡Categoría sorpresa "${newCategory.name}" creada y seleccionada!`);
+            addNewCategoryToGame({ name: newCategory.name, words: newCategory.words }, true);
         } catch (error) {
             console.error('Error getting surprise category:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
+    }
+    
+    async function handleAICategoryGeneration() {
+        const topic = prompt("Introduce el tema para la nueva categoría (ej: 'Superhéroes'):");
+        if (!topic || topic.trim() === '') return;
+        loadingOverlay.classList.remove('hidden');
+        try {
+            const newWords = await getWordsForCategory(topic, true); // Force fetch new words
+            addNewCategoryToGame({ name: topic, words: newWords });
+        } catch (error) {
+            console.error('Error generating AI category:', error);
             alert(`Error: ${error.message}`);
         } finally {
             loadingOverlay.classList.add('hidden');
@@ -544,6 +534,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         saveConfig();
         updateStartButtonState();
+    }
+
+    // --- WORD GENERATION (Refactored) ---
+    async function getWordsForCategory(categoryName, forceFetch = false) {
+        if (!forceFetch && state.generatedWordsCache[categoryName] && Object.keys(state.generatedWordsCache[categoryName]).length > 0) {
+            return state.generatedWordsCache[categoryName];
+        }
+        
+        try {
+            const response = await fetch('/api/generate-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: categoryName }),
+            });
+            if (!response.ok) throw new Error('La API no pudo generar palabras.');
+            const newWords = await response.json();
+            state.generatedWordsCache[categoryName] = newWords;
+            return newWords;
+        } catch (error) {
+            throw new Error(`Fallo al obtener palabras para ${categoryName}: ${error.message}`);
+        }
     }
 
     // --- GAME LOGIC ---
@@ -569,24 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const availableCategories = Array.from(state.persistentConfig.selectedCategories);
         state.secretCategory = availableCategories[Math.floor(Math.random() * availableCategories.length)];
         
-        let wordsInCat;
-        if (state.generatedWordsCache[state.secretCategory] && Object.keys(state.generatedWordsCache[state.secretCategory]).length > 0) {
-            wordsInCat = state.generatedWordsCache[state.secretCategory];
-        } else {
-            try {
-                const response = await fetch('/api/generate-category', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic: state.secretCategory }),
-                });
-                if (!response.ok) throw new Error('API failed to generate words.');
-                const newWords = await response.json();
-                state.generatedWordsCache[state.secretCategory] = newWords;
-                wordsInCat = newWords;
-            } catch (error) {
-                throw new Error(`Failed to fetch words for category ${state.secretCategory}: ${error.message}`);
-            }
-        }
+        const wordsInCat = await getWordsForCategory(state.secretCategory);
 
         const difficulty = difficultySelect.value;
         let difficultyPool = (difficulty === 'random')
@@ -638,33 +632,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateCardBack(player) {
         const playerRole = state.roles[player.name];
         let content = '';
-
-        const getRoleTranslation = (role) => {
-            if (role === 'Civil') return 'Civil';
-            if (role === 'Detective') return 'Detective';
-            return 'Impostor';
-        }
+        const getRoleTranslation = (role) => (role === 'Civil') ? 'Civil' : (role === 'Detective') ? 'Detective' : 'Impostor';
 
         if (playerRole.role === 'Impostor') {
-            content = `
-                <div class="text-center my-auto">
-                    <h3 class="text-5xl font-bold uppercase tracking-wider text-[var(--accent-red)]" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5)">IMPOSTOR</h3>
-                    <p class="text-[var(--text-secondary)] mt-4">Descubre la palabra secreta.</p>
-                </div>
-            `;
+            content = `<div class="text-center my-auto"><h3 class="text-5xl font-bold uppercase tracking-wider text-[var(--accent-red)]" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5)">IMPOSTOR</h3><p class="text-[var(--text-secondary)] mt-4">Descubre la palabra secreta.</p></div>`;
             if (state.hintForImpostorAvailable && player.name === state.startingPlayer.name) {
                 content += `<button id="get-hint-btn" class="mb-4 bg-white/10 text-white font-semibold py-2 px-4 rounded-lg">Pedir Pista a la IA</button>`;
             }
         } else {
             const roleColor = playerRole.role === 'Detective' ? 'var(--accent-color)' : 'var(--accent-green)';
-            content = `
-                <div class="text-left w-full"><p class="text-xs uppercase tracking-wider text-[var(--text-secondary)]">Categoría</p><h4 class="text-xl font-semibold">${state.secretCategory}</h4></div>
-                <div class="text-center my-auto">
-                    <h3 class="text-4xl font-bold uppercase tracking-wider" style="color:${roleColor}; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">${getRoleTranslation(playerRole.role)}</h3>
-                    <p class="text-5xl font-bold mt-4">${state.secretWord}</p>
-                </div>
-                <div class="w-full"></div>
-            `;
+            content = `<div class="text-left w-full"><p class="text-xs uppercase tracking-wider text-[var(--text-secondary)]">Categoría</p><h4 class="text-xl font-semibold">${state.secretCategory}</h4></div><div class="text-center my-auto"><h3 class="text-4xl font-bold uppercase tracking-wider" style="color:${roleColor}; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">${getRoleTranslation(playerRole.role)}</h3><p class="text-5xl font-bold mt-4">${state.secretWord}</p></div><div class="w-full"></div>`;
         }
         cardBackContent.innerHTML = content;
         const hintBtn = document.getElementById('get-hint-btn');
@@ -695,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/generate-starting-reason', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerName: state.startingPlayer.name, category: state.secretCategory, word: state.secretWord }),
+                body: JSON.stringify({ playerName: state.startingPlayer.name }),
             });
             if (!response.ok) throw new Error('No se pudo obtener la razón de inicio.');
             const data = await response.json();
@@ -734,7 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetForNewGame() {
-        // Reset only round-specific state
         state.roles = {};
         state.secretWord = '';
         state.secretCategory = '';
@@ -742,32 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.gameStarted = false;
         state.startingPlayer = null;
         state.hintForImpostorAvailable = false;
-        
         switchScreen('config');
-        // No need to call updateUI() as the config hasn't changed
-    }
-
-    // --- AI INTEGRATION ---
-    async function handleAICategoryGeneration() {
-        const topic = prompt("Introduce el tema para la nueva categoría (ej: 'Superhéroes'):");
-        if (!topic || topic.trim() === '') return;
-        loadingOverlay.classList.remove('hidden');
-        try {
-            const response = await fetch('/api/generate-category', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic }),
-            });
-            if (!response.ok) throw new Error('No se pudo generar la categoría.');
-            const newWords = await response.json();
-            populateCategories({ name: topic, words: newWords });
-            alert(`¡Categoría "${topic}" creada y añadida!`);
-        } catch (error) {
-            console.error('Error generating AI category:', error);
-            alert(`Error: ${error.message}`);
-        } finally {
-            loadingOverlay.classList.add('hidden');
-        }
     }
     
     async function getAIHint(event) {
