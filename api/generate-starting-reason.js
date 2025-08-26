@@ -17,9 +17,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { playerName, category, word } = req.body;
-    if (!playerName || !category || !word) {
-        return res.status(400).json({ error: 'playerName, category, and word are required' });
+    const { playerName } = req.body; // Word and category are ignored now
+    if (!playerName) {
+        return res.status(400).json({ error: 'playerName is required' });
     }
 
     const API_KEY = process.env.GEMINI_API_KEY;
@@ -29,20 +29,20 @@ export default async function handler(req, res) {
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
     const prompt = `
-        Para un juego de mesa llamado "Imposter Who?", necesito una razón creativa para que un jugador comience la ronda.
+        Para un juego de mesa en España, necesito una frase graciosa para decidir quién empieza.
         El nombre del jugador es "${playerName}".
-        La categoría de la ronda es "${category}".
-        La palabra secreta es "${word}".
 
-        Inventa una frase corta, original y divertida en español que explique por qué ${playerName} debe empezar. La razón debe estar sutilmente relacionada con la palabra secreta o la categoría.
-        
-        Ejemplos:
-        - Si la palabra es "Titanic", la razón podría ser: "${playerName} tiene un corazón que seguirá latiendo."
-        - Si la palabra es "Gato", la razón podría ser: "${playerName} siempre cae de pie."
-        - Si la palabra es "Programador", la razón podría ser: "El código de ${playerName} compila a la primera."
+        Inventa una frase corta en español, de una sola línea, que sea divertida, que rime con el nombre "${playerName}" y que haga referencia a la cultura popular, dichos, comida o humor de España.
+        La frase NO debe tener ninguna relación con la palabra secreta o la categoría del juego. Debe ser totalmente aleatoria y centrada en el humor.
+
+        Ejemplos de inspiración:
+        - Para "Ana": "Empieza Ana, porque tiene más salero que una sevillana."
+        - Para "Javier": "Empieza Javier, que tiene más hambre que el perro de un ciego y se va a comer un pincho de tortilla."
+        - Para "Lucía": "Empieza Lucía, porque hoy está que lo tira, como los precios del Día sin IVA."
+        - Para "Mateo": "Empieza Mateo, que se conoce todos los bares de tapeo."
 
         Responde exclusivamente con un objeto JSON con el siguiente formato, sin texto adicional:
-        {"reason": "Tu frase creativa aquí"}
+        {"reason": "Tu frase creativa y graciosa aquí"}
     `;
 
     try {
