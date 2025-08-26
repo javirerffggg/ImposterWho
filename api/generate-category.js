@@ -41,17 +41,17 @@ export default async function handler(req, res) {
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
         });
 
-        if (!apiResponse.ok) {
-            const errorText = await apiResponse.text();
-            console.error("Gemini API Error Response:", errorText);
-            throw new Error(`Error de la API de Gemini: ${apiResponse.status}`);
-        }
-
         const data = await apiResponse.json();
+
+        if (!apiResponse.ok) {
+            console.error("Gemini API Error Response:", data);
+            const errorMessage = data?.error?.message || `Error de la API de Gemini: ${apiResponse.status}`;
+            throw new Error(errorMessage);
+        }
         
-        if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+        if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts?.[0]?.text) {
             console.error("Invalid response structure from Gemini:", JSON.stringify(data));
-            throw new Error("Estructura de respuesta inválida desde la API de Gemini.");
+            throw new Error("Estructura de respuesta inválida o vacía desde la API de Gemini. Puede ser por filtros de seguridad.");
         }
 
         const rawText = data.candidates[0].content.parts[0].text;
