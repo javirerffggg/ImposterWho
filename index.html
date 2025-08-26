@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imposter Who?</title>
+    <meta name="description" content="Un juego de deducción social para encontrar al impostor.">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Dictionary -->
+    <script src="words.js" defer></script>
+
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent-primary: #8a2be2;
+            --accent-secondary: #4b0082;
+            --card-face-down: #3a3a3a;
+        }
+
+        .theme-space {
+            --bg-primary: #0c0a1a;
+            --bg-secondary: #1d1a3b;
+            --text-primary: #e0e0ff;
+            --text-secondary: #a0a0cc;
+            --accent-primary: #00ffff;
+            --accent-secondary: #00aaff;
+            --card-face-down: #2c2a4b;
+        }
+
+        .theme-fantasy {
+            --bg-primary: #2d1e2f;
+            --bg-secondary: #452842;
+            --text-primary: #f0e6f2;
+            --text-secondary: #c8b8ca;
+            --accent-primary: #ffaa00;
+            --accent-secondary: #8b4513;
+            --card-face-down: #5d3a5a;
+        }
+        
+        .theme-noir {
+            --bg-primary: #1c1c1c;
+            --bg-secondary: #333333;
+            --text-primary: #e6e6e6;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #ff3333;
+            --accent-secondary: #8b0000;
+            --card-face-down: #444444;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Card flip animation */
+        .card {
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .card-face-back {
+            transform: rotateY(180deg);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-secondary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+    </style>
+</head>
+<body class="bg-[var(--bg-primary)] text-[var(--text-primary)] min-h-screen flex items-center justify-center p-4">
+
+    <!-- ===== CONFIG SCREEN ===== -->
+    <div id="config-screen" class="w-full max-w-2xl mx-auto">
+        <div class="bg-[var(--bg-secondary)] p-6 md:p-8 rounded-2xl shadow-2xl">
+            <h1 class="text-4xl font-bold text-center mb-2 text-[var(--accent-primary)]">Imposter Who?</h1>
+            <p class="text-center text-[var(--text-secondary)] mb-8">Configura la partida para empezar a jugar.</p>
+
+            <!-- Player Management -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-3">Jugadores</h2>
+                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                    <input type="text" id="player-name-input" placeholder="Nombre del jugador..." class="flex-grow bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent-primary)] transition">
+                    <input type="color" id="player-color-input" value="#8a2be2" class="w-full sm:w-16 h-12 rounded-lg cursor-pointer bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)]">
+                    <button id="add-player-btn" class="bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white font-bold py-2 px-6 rounded-lg transition duration-300">Añadir</button>
+                </div>
+                <div id="player-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+            </div>
+
+            <!-- Game Options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold mb-3">Opciones de Partida</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label for="impostor-count" class="text-[var(--text-secondary)]">Nº Impostores:</label>
+                            <select id="impostor-count" class="bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-3 py-1">
+                                <option value="1">1</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label for="difficulty" class="text-[var(--text-secondary)]">Dificultad:</label>
+                            <select id="difficulty" class="bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-3 py-1">
+                                <option value="random">Aleatoria</option>
+                                <option value="easy">Fácil</option>
+                                <option value="medium">Media</option>
+                                <option value="hard">Difícil</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label for="theme-selector" class="text-[var(--text-secondary)]">Tema Visual:</label>
+                            <select id="theme-selector" class="bg-[var(--bg-primary)] border-2 border-[var(--accent-secondary)] rounded-lg px-3 py-1">
+                                <option value="theme-dark">Oscuro</option>
+                                <option value="theme-space">Espacial</option>
+                                <option value="theme-fantasy">Fantasía</option>
+                                <option value="theme-noir">Noir</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold mb-3">Modos de Juego</h2>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="impostor-hint-mode" class="h-5 w-5 rounded accent-[var(--accent-primary)]"><span>💡 Pista para Impostores</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="troll-mode" class="h-5 w-5 rounded accent-[var(--accent-primary)]"><span>🤡 Modo Troll</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="detective-mode" class="h-5 w-5 rounded accent-[var(--accent-primary)]"><span>🕵️ Modo Detective</span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold mb-3">Categorías</h2>
+                <div id="category-list" class="max-h-48 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-primary)] rounded-lg">
+                    <!-- Categories will be injected here -->
+                </div>
+                <div class="flex flex-wrap gap-3 mt-4">
+                    <button id="surprise-me-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">✨ Sorpréndeme</button>
+                    <button id="select-all-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">Seleccionar Todas</button>
+                    <button id="ai-category-btn" class="flex-1 bg-[var(--accent-secondary)] hover:bg-[var(--accent-primary)] text-white font-bold py-2 px-4 rounded-lg transition">🤖 Crear con IA</button>
+                </div>
+            </div>
+
+            <!-- Start Game -->
+            <button id="start-game-btn" class="w-full bg-[var(--accent-primary)] text-white font-bold text-xl py-4 rounded-lg transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed">Asignar Roles</button>
+        </div>
+    </div>
+
+    <!-- ===== ROLE REVEAL SCREEN ===== -->
+    <div id="reveal-screen" class="w-full max-w-md mx-auto hidden">
+        <div class="text-center">
+            <p class="text-xl text-[var(--text-secondary)] mb-2">Pásale el móvil a:</p>
+            <h2 id="current-player-name" class="text-4xl font-bold mb-6"></h2>
+            <p class="text-lg text-[var(--text-secondary)] mb-4">Toca la tarjeta para ver tu rol</p>
+
+            <div id="role-card" class="card w-full h-80 perspective-1000 cursor-pointer">
+                <!-- Card Front -->
+                <div class="card-face absolute w-full h-full flex items-center justify-center bg-[var(--card-face-down)] rounded-2xl shadow-xl border-4 border-[var(--accent-secondary)]">
+                    <span class="text-6xl">?</span>
+                </div>
+                <!-- Card Back -->
+                <div id="card-back-content" class="card-face card-face-back absolute w-full h-full p-6 flex flex-col items-center justify-center bg-[var(--bg-secondary)] rounded-2xl shadow-xl border-4 border-[var(--accent-primary)]">
+                    <!-- Content injected by JS -->
+                </div>
+            </div>
+
+            <button id="next-player-btn" class="mt-8 w-full bg-[var(--accent-primary)] text-white font-bold text-xl py-4 rounded-lg transition duration-300 opacity-0 invisible">Siguiente Jugador</button>
+        </div>
+    </div>
+    
+    <!-- ===== GAME SCREEN ===== -->
+    <div id="game-screen" class="w-full max-w-md mx-auto text-center hidden">
+        <div class="bg-[var(--bg-secondary)] p-8 rounded-2xl shadow-2xl">
+            <h2 class="text-3xl font-bold mb-4">¡A jugar!</h2>
+            <p id="starting-player-announcement" class="text-xl text-[var(--text-secondary)] mb-8"></p>
+            <div id="final-reveal-info" class="hidden text-left space-y-4 mb-8 p-4 bg-[var(--bg-primary)] rounded-lg">
+                <p class="text-lg">La palabra era: <strong id="final-word" class="text-[var(--accent-primary)]"></strong></p>
+                <div id="final-impostors"></div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <button id="reveal-roles-btn" class="w-full bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white font-bold py-3 px-6 rounded-lg transition">Revelar Roles y Palabra</button>
+                <button id="new-game-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition">Jugar de Nuevo</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading/Modal Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="text-white text-2xl animate-pulse">Generando con IA...</div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- STATE MANAGEMENT ---
+    const state = {
+        players: [],
+        impostorCount: 1,
+        difficulty: 'random',
+        selectedCategories: new Set(),
+        gameModes: {
+            impostorHint: false,
+            troll: false,
+            detective: false,
+        },
+        roles: {},
+        secretWord: '',
+        secretCategory: '',
+        currentPlayerIndex: 0,
+        lastRoundImpostors: [],
+        gameStarted: false,
+        startingPlayer: null,
+        hintForImpostorAvailable: false,
+    };
+
+    // --- DOM ELEMENTS ---
+    const screens = {
+        config: document.getElementById('config-screen'),
+        reveal: document.getElementById('reveal-screen'),
+        game: document.getElementById('game-screen'),
+    };
+    const playerNameInput = document.getElementById('player-name-input');
+    const playerColorInput = document.getElementById('player-color-input');
+    const addPlayerBtn = document.getElementById('add-player-btn');
+    const playerList = document.getElementById('player-list');
+    const impostorCountSelect = document.getElementById('impostor-count');
+    const difficultySelect = document.getElementById('difficulty');
+    const themeSelector = document.getElementById('theme-selector');
+    const categoryList = document.getElementById('category-list');
+    const surpriseMeBtn = document.getElementById('surprise-me-btn');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const aiCategoryBtn = document.getElementById('ai-category-btn');
+    const impostorHintMode = document.getElementById('impostor-hint-mode');
+    const trollMode = document.getElementById('troll-mode');
+    const detectiveMode = document.getElementById('detective-mode');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const currentPlayerName = document.getElementById('current-player-name');
+    const roleCard = document.getElementById('role-card');
+    const cardBackContent = document.getElementById('card-back-content');
+    const nextPlayerBtn = document.getElementById('next-player-btn');
+    const startingPlayerAnnouncement = document.getElementById('starting-player-announcement');
+    const revealRolesBtn = document.getElementById('reveal-roles-btn');
+    const newGameBtn = document.getElementById('new-game-btn');
+    const finalRevealInfo = document.getElementById('final-reveal-info');
+    const finalWord = document.getElementById('final-word');
+    const finalImpostors = document.getElementById('final-impostors');
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    // --- INITIALIZATION ---
+    function initialize() {
+        populateCategories();
+        addEventListeners();
+        updateUI();
+        registerServiceWorker();
+    }
+
+    function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
+                    .catch(err => console.log('ServiceWorker registration failed: ', err));
+            });
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+    function addEventListeners() {
+        addPlayerBtn.addEventListener('click', addPlayer);
+        playerNameInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') addPlayer();
+        });
+        impostorCountSelect.addEventListener('change', () => {
+            state.impostorCount = parseInt(impostorCountSelect.value);
+        });
+        difficultySelect.addEventListener('change', () => {
+            state.difficulty = difficultySelect.value;
+        });
+        themeSelector.addEventListener('change', (e) => {
+            document.body.className = e.target.value + ' bg-[var(--bg-primary)] text-[var(--text-primary)] min-h-screen flex items-center justify-center p-4';
+        });
+        surpriseMeBtn.addEventListener('click', selectRandomCategory);
+        selectAllBtn.addEventListener('click', toggleSelectAllCategories);
+        aiCategoryBtn.addEventListener('click', handleAICategoryGeneration);
+        impostorHintMode.addEventListener('change', (e) => state.gameModes.impostorHint = e.target.checked);
+        trollMode.addEventListener('change', (e) => state.gameModes.troll = e.target.checked);
+        detectiveMode.addEventListener('change', (e) => {
+            state.gameModes.detective = e.target.checked;
+            updateUI();
+        });
+        startGameBtn.addEventListener('click', startGame);
+        roleCard.addEventListener('click', flipCard);
+        nextPlayerBtn.addEventListener('click', nextPlayer);
+        revealRolesBtn.addEventListener('click', showFinalReveal);
+        newGameBtn.addEventListener('click', resetForNewGame);
+    }
+
+    // --- UI UPDATE FUNCTIONS ---
+    function updateUI() {
+        renderPlayerList();
+        updateImpostorCountOptions();
+        updateStartButtonState();
+    }
+
+    function switchScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function renderPlayerList() {
+        playerList.innerHTML = '';
+        state.players.forEach((player, index) => {
+            const playerEl = document.createElement('div');
+            playerEl.className = 'flex items-center justify-between bg-[var(--bg-primary)] p-2 rounded-lg';
+            playerEl.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded-full" style="background-color: ${player.color};"></div>
+                    <span class="truncate">${player.name}</span>
+                </div>
+                <button data-index="${index}" class="remove-player-btn text-red-500 hover:text-red-700 font-bold">X</button>
+            `;
+            playerList.appendChild(playerEl);
+        });
+        document.querySelectorAll('.remove-player-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => removePlayer(parseInt(e.target.dataset.index)));
+        });
+    }
+
+    function updateImpostorCountOptions() {
+        const maxImpostors = state.players.length >= 5 ? 2 : 1;
+        impostorCountSelect.innerHTML = '<option value="1">1</option>';
+        if (maxImpostors === 2) {
+            impostorCountSelect.innerHTML += '<option value="2">2</option>';
+        }
+        if (state.impostorCount > maxImpostors) {
+            state.impostorCount = maxImpostors;
+            impostorCountSelect.value = maxImpostors;
+        }
+    }
+
+    function updateStartButtonState() {
+        const minPlayers = state.gameModes.detective ? 4 : 3;
+        const isReady = state.players.length >= minPlayers && state.selectedCategories.size > 0;
+        startGameBtn.disabled = !isReady;
+        startGameBtn.textContent = isReady ? 'Asignar Roles' : `Mín ${minPlayers} jugadores y 1 categoría`;
+    }
+
+    function populateCategories(newCategory = null) {
+        if (newCategory) {
+            WORD_CATEGORIES[newCategory.name] = newCategory.words;
+        }
+
+        const categoryNames = Object.keys(WORD_CATEGORIES);
+        categoryList.innerHTML = '';
+        categoryNames.forEach(cat => {
+            const label = document.createElement('label');
+            label.className = 'flex items-center gap-2 p-2 bg-[var(--bg-secondary)] rounded-md cursor-pointer hover:bg-[var(--accent-secondary)] transition';
+            label.innerHTML = `
+                <input type="checkbox" data-category="${cat}" class="category-checkbox h-5 w-5 rounded accent-[var(--accent-primary)]">
+                <span>${cat}</span>
+            `;
+            categoryList.appendChild(label);
+        });
+        
+        document.querySelectorAll('.category-checkbox').forEach(box => {
+            if (state.selectedCategories.has(box.dataset.category)) {
+                box.checked = true;
+            }
+            box.addEventListener('change', (e) => {
+                const category = e.target.dataset.category;
+                if (e.target.checked) {
+                    state.selectedCategories.add(category);
+                } else {
+                    state.selectedCategories.delete(category);
+                }
+                updateStartButtonState();
+            });
+        });
+    }
+
+    // --- PLAYER MANAGEMENT ---
+    function addPlayer() {
+        const name = playerNameInput.value.trim();
+        if (name && state.players.length < 12) {
+            state.players.push({ name, color: playerColorInput.value, score: 0 });
+            playerNameInput.value = '';
+            playerNameInput.focus();
+            updateUI();
+        }
+    }
+
+    function removePlayer(index) {
+        state.players.splice(index, 1);
+        updateUI();
+    }
+
+    // --- CATEGORY MANAGEMENT ---
+    function selectRandomCategory() {
+        const checkboxes = document.querySelectorAll('.category-checkbox');
+        checkboxes.forEach(box => box.checked = false);
+        state.selectedCategories.clear();
+
+        const randomIndex = Math.floor(Math.random() * checkboxes.length);
+        checkboxes[randomIndex].checked = true;
+        state.selectedCategories.add(checkboxes[randomIndex].dataset.category);
+        updateStartButtonState();
+    }
+    
+    function toggleSelectAllCategories() {
+        const checkboxes = document.querySelectorAll('.category-checkbox');
+        const allSelected = checkboxes.length > 0 && Array.from(checkboxes).every(box => box.checked);
+
+        checkboxes.forEach(box => {
+            box.checked = !allSelected;
+            const category = box.dataset.category;
+            if (!allSelected) {
+                state.selectedCategories.add(category);
+            } else {
+                state.selectedCategories.delete(category);
+            }
+        });
+        updateStartButtonState();
+    }
+
+    // --- GAME LOGIC ---
+    function startGame() {
+        state.gameStarted = true;
+        assignRoles();
+        
+        // Determine starting player AFTER roles are assigned
+        state.startingPlayer = state.players[Math.floor(Math.random() * state.players.length)];
+        
+        // Check if hint is available for the starting player
+        state.hintForImpostorAvailable = state.gameModes.impostorHint &&
+                                        state.roles[state.startingPlayer.name].role === 'Impostor';
+
+        state.currentPlayerIndex = 0;
+        setupRevealScreen();
+        switchScreen('reveal');
+    }
+
+    function assignRoles() {
+        // Word selection
+        const availableCategories = Array.from(state.selectedCategories);
+        state.secretCategory = availableCategories[Math.floor(Math.random() * availableCategories.length)];
+        
+        const wordsInCat = WORD_CATEGORIES[state.secretCategory];
+        let difficultyPool = [];
+        if (state.difficulty === 'random') {
+            difficultyPool = [...wordsInCat.easy, ...wordsInCat.medium, ...wordsInCat.hard];
+        } else {
+            difficultyPool = wordsInCat[state.difficulty];
+        }
+        state.secretWord = difficultyPool[Math.floor(Math.random() * difficultyPool.length)];
+
+        // Role assignment
+        let playerNames = state.players.map(p => p.name);
+        playerNames.sort(() => Math.random() - 0.5); // Shuffle players
+
+        state.roles = {};
+        const isTrollRound = state.gameModes.troll && Math.random() < 0.15;
+
+        if (isTrollRound) {
+            playerNames.forEach(name => state.roles[name] = { role: 'Impostor', isTroll: true });
+            state.lastRoundImpostors = [...playerNames];
+            return;
+        }
+
+        // Fair impostor selection
+        let potentialImpostors = playerNames.filter(name => !state.lastRoundImpostors.includes(name));
+        if (potentialImpostors.length < state.impostorCount) {
+            potentialImpostors = [...playerNames]; // Reset if not enough candidates
+        }
+        
+        const impostors = [];
+        while (impostors.length < state.impostorCount) {
+            const idx = Math.floor(Math.random() * potentialImpostors.length);
+            impostors.push(potentialImpostors.splice(idx, 1)[0]);
+        }
+        state.lastRoundImpostors = [...impostors];
+
+        let detective = null;
+        if (state.gameModes.detective) {
+            const potentialDetectives = playerNames.filter(name => !impostors.includes(name));
+            detective = potentialDetectives[Math.floor(Math.random() * potentialDetectives.length)];
+        }
+
+        playerNames.forEach(name => {
+            if (impostors.includes(name)) {
+                state.roles[name] = { role: 'Impostor' };
+            } else if (name === detective) {
+                state.roles[name] = { role: 'Detective' };
+            } else {
+                state.roles[name] = { role: 'Civil' };
+            }
+        });
+    }
+
+    function setupRevealScreen() {
+        const player = state.players[state.currentPlayerIndex];
+        currentPlayerName.textContent = player.name;
+        currentPlayerName.style.color = player.color;
+        
+        roleCard.classList.remove('is-flipped');
+        nextPlayerBtn.classList.add('opacity-0', 'invisible');
+        updateCardBack(player);
+    }
+
+    function updateCardBack(player) {
+        const playerRole = state.roles[player.name];
+        let content = '';
+
+        if (playerRole.role === 'Impostor') {
+            content = `
+                <h3 class="text-4xl font-bold text-red-500 mb-4">¡Eres IMPOSTOR!</h3>
+                <p class="text-xl text-[var(--text-secondary)]">Descubre la palabra secreta para ganar.</p>
+            `;
+            if (state.hintForImpostorAvailable && player.name === state.startingPlayer.name) {
+                content += `<button id="get-hint-btn" class="mt-6 bg-[var(--accent-secondary)] hover:bg-[var(--accent-primary)] text-white font-bold py-2 px-4 rounded-lg transition">Pedir Pista a la IA (1 uso)</button>`;
+            }
+        } else {
+            const roleColor = playerRole.role === 'Detective' ? 'text-blue-400' : 'text-green-400';
+            content = `
+                <h3 class="text-4xl font-bold ${roleColor} mb-4">Eres ${playerRole.role.toUpperCase()}</h3>
+                <p class="text-lg text-[var(--text-secondary)]">Categoría: ${state.secretCategory}</p>
+                <p class="text-2xl font-semibold mt-4">La palabra es:</p>
+                <p class="text-5xl font-bold text-[var(--accent-primary)] mt-2">${state.secretWord}</p>
+            `;
+        }
+        cardBackContent.innerHTML = content;
+
+        const hintBtn = document.getElementById('get-hint-btn');
+        if (hintBtn) {
+            hintBtn.addEventListener('click', getAIHint);
+        }
+    }
+
+    function flipCard() {
+        if (roleCard.classList.contains('is-flipped')) return;
+        roleCard.classList.add('is-flipped');
+        nextPlayerBtn.classList.remove('opacity-0', 'invisible');
+        nextPlayerBtn.classList.add('transition-opacity', 'duration-500', 'delay-500'); // Smooth appearance
+    }
+
+    function nextPlayer() {
+        roleCard.classList.remove('is-flipped');
+        
+        // Delay content update until flip animation is done
+        setTimeout(() => {
+            state.currentPlayerIndex++;
+            if (state.currentPlayerIndex < state.players.length) {
+                setupRevealScreen();
+            } else {
+                showGameScreen();
+            }
+        }, 600); // Match card flip duration
+    }
+
+    function showGameScreen() {
+        startingPlayerAnnouncement.innerHTML = `Empieza la ronda <strong style="color: ${state.startingPlayer.color};">${state.startingPlayer.name}</strong>.`;
+        finalRevealInfo.classList.add('hidden');
+        revealRolesBtn.textContent = 'Revelar Roles y Palabra';
+        switchScreen('game');
+    }
+
+    function showFinalReveal() {
+        finalWord.textContent = state.secretWord;
+        
+        let impostorHtml = '<p class="text-lg">Los impostores eran:</p><ul class="list-disc list-inside">';
+        let detectiveHtml = '';
+
+        state.players.forEach(player => {
+            const roleInfo = state.roles[player.name];
+            if (roleInfo.role === 'Impostor') {
+                impostorHtml += `<li style="color: ${player.color};">${player.name}</li>`;
+            }
+            if (roleInfo.role === 'Detective') {
+                detectiveHtml = `<p class="text-lg mt-2">El detective era: <strong style="color: ${player.color};">${player.name}</strong></p>`;
+            }
+        });
+        impostorHtml += '</ul>';
+        
+        if (state.roles[state.players[0].name].isTroll) {
+           impostorHtml = `<p class="text-lg text-red-500 font-bold">¡RONDA TROLL! ¡Todos eran impostores!</p>`;
+        }
+
+        finalImpostors.innerHTML = impostorHtml + detectiveHtml;
+        finalRevealInfo.classList.remove('hidden');
+        revealRolesBtn.textContent = 'Ocultar Roles';
+        revealRolesBtn.onclick = () => {
+            finalRevealInfo.classList.toggle('hidden');
+            revealRolesBtn.textContent = finalRevealInfo.classList.contains('hidden') ? 'Revelar Roles y Palabra' : 'Ocultar Roles';
+            revealRolesBtn.onclick = showFinalReveal; // Reset click handler
+        };
+    }
+
+    function resetForNewGame() {
+        // Reset game state but keep players and selected categories
+        state.roles = {};
+        state.secretWord = '';
+        state.secretCategory = '';
+        state.currentPlayerIndex = 0;
+        state.gameStarted = false;
+        state.startingPlayer = null;
+        state.hintForImpostorAvailable = false;
+
+        // Uncheck game modes
+        impostorHintMode.checked = false;
+        trollMode.checked = false;
+        detectiveMode.checked = false;
+        state.gameModes = { impostorHint: false, troll: false, detective: false };
+
+        switchScreen('config');
+        updateUI();
+    }
+
+    // --- AI INTEGRATION ---
+    async function handleAICategoryGeneration() {
+        const topic = prompt("Introduce el tema para la nueva categoría (ej: 'Superhéroes', 'Frutas Tropicales'):");
+        if (!topic || topic.trim() === '') return;
+
+        loadingOverlay.classList.remove('hidden');
+        try {
+            const response = await fetch('/api/generate-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error del servidor: ${response.statusText}`);
+            }
+
+            const newCategory = await response.json();
+            populateCategories({ name: topic, words: newCategory });
+            alert(`¡Categoría "${topic}" creada y añadida!`);
+
+        } catch (error) {
+            console.error('Error generando categoría con IA:', error);
+            alert('Hubo un problema al crear la categoría. Inténtalo de nuevo.');
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
+    }
+    
+    async function getAIHint(event) {
+        event.stopPropagation(); // Prevent card from flipping
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Pensando...';
+        
+        try {
+            const response = await fetch('/api/generate-hint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: state.secretCategory }),
+            });
+
+            if (!response.ok) throw new Error('Failed to get hint');
+            
+            const data = await response.json();
+            const hint = data.hint;
+
+            const hintEl = document.createElement('p');
+            hintEl.className = 'mt-4 text-xl text-yellow-300';
+            hintEl.innerHTML = `<strong>Pista:</strong> ${hint}`;
+            btn.replaceWith(hintEl);
+
+        } catch (error) {
+            console.error('Error getting AI hint:', error);
+            btn.textContent = 'Error. Inténtalo de nuevo.';
+            btn.disabled = false;
+        }
+    }
+
+
+    // --- START ---
+    initialize();
+});
+</script>
+
+</body>
+</html>
