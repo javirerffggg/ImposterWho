@@ -1,0 +1,73 @@
+// manifest.json
+{
+    "name": "Imposter Who?",
+    "short_name": "Imposter?",
+    "description": "Un juego de deducción social para encontrar al impostor.",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#8a2be2",
+    "icons": [
+        {
+            "src": "icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
+```javascript
+// service-worker.js
+const CACHE_NAME = 'imposter-who-cache-v1';
+const urlsToCache = [
+    './index.html',
+    './words.js',
+    './icons/icon-192x192.png',
+    './icons/icon-512x512.png'
+];
+
+// Evento de instalación: se abre el caché y se añaden los archivos principales.
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
+            })
+    );
+});
+
+// Evento fetch: responde con los archivos del caché si están disponibles.
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                // Si la respuesta está en el caché, la devuelve.
+                if (response) {
+                    return response;
+                }
+                // Si no, intenta obtenerla de la red.
+                return fetch(event.request);
+            })
+    );
+});
+
+// Evento de activación: limpia cachés antiguos.
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
