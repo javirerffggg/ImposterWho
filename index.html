@@ -106,11 +106,12 @@
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            transition-delay: 0.6s;
+            pointer-events: none;
         }
-        .flip-card.is-flipped + .reveal-footer-button {
+        .reveal-footer-button.is-visible {
             opacity: 1;
             transform: translateY(0);
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -265,11 +266,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     const state = {
-        players: [],
-        impostorCount: 1,
-        difficulty: 'random',
-        selectedCategories: new Set(),
-        gameModes: { impostorHint: false, troll: false, detective: false },
+        // Round-specific state
         roles: {},
         secretWord: '',
         secretCategory: '',
@@ -278,7 +275,16 @@ document.addEventListener('DOMContentLoaded', () => {
         gameStarted: false,
         startingPlayer: null,
         hintForImpostorAvailable: false,
-        generatedWordsCache: {}, // Cache for AI-generated words
+        
+        // Session-persistent state
+        persistentConfig: {
+            players: [],
+            selectedCategories: new Set(),
+            gameModes: { impostorHint: false, troll: false, detective: false },
+        },
+        
+        // Word generation cache
+        generatedWordsCache: {},
     };
 
     // --- DOM ELEMENTS ---
@@ -305,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleCard = document.getElementById('role-card');
     const cardBackContent = document.getElementById('card-back-content');
     const nextPlayerBtn = document.getElementById('next-player-btn');
+    const revealFooter = document.querySelector('.reveal-footer-button');
     const startingPlayerAnnouncement = document.getElementById('starting-player-announcement');
     const startingPlayerAvatar = document.getElementById('starting-player-avatar');
     const startingPlayerReason = document.getElementById('starting-player-reason');
@@ -318,6 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZATION ---
     function initialize() {
+        loadConfig();
         populateCategories();
         addEventListeners();
         updateUI();
@@ -333,6 +341,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
+    
+    // --- CONFIG PERSISTENCE ---
+    function saveConfig() {
+        const configToSave = {
+            ...state.persistentConfig,
+            selectedCategories: Array.from(state.persistentConfig.selectedCategories) // Convert Set to Array for JSON
+        };
+        localStorage.setItem('imposterWhoConfig', JSON.stringify(configToSave));
+    }
+
+    function loadConfig() {
+        const savedConfig = localStorage.getItem('imposterWhoConfig');
+        if (savedConfig) {
+            const parsedConfig = JSON.parse(savedConfig);
+            state.persistentConfig.players = parsedConfig.players || [];
+            state.persistentConfig.selectedCategories = new Set(parsedConfig.selectedCategories || []);
+            state.persistentConfig.gameModes = parsedConfig.gameModes || { impostorHint: false, troll: false, detective: false };
+        }
+    }
 
     // --- EVENT LISTENERS ---
     function addEventListeners() {
@@ -340,19 +367,37 @@ document.addEventListener('DOMContentLoaded', () => {
         playerNameInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') addPlayer();
         });
-        impostorCountSelect.addEventListener('change', (e) => state.impostorCount = parseInt(e.target.value));
-        difficultySelect.addEventListener('change', (e) => state.difficulty = e.target.value);
+        impostorCountSelect.addEventListener('change', (e) => {
+            // This is not persistent, but we could make it so if desired
+        });
+        difficultySelect.addEventListener('change', (e) => {
+            // This is not persistent
+        });
         surpriseMeBtn.addEventListener('click', handleSurpriseMeClick);
         selectAllBtn.addEventListener('click', toggleSelectAllCategories);
         aiCategoryBtn.addEventListener('click', handleAICategoryGeneration);
-        impostorHintMode.addEventListener('change', (e) => state.gameModes.impostorHint = e.target.checked);
-        trollMode.addEventListener('change', (e) => state.gameModes.troll = e.target.checked);
+        
+        impostorHintMode.addEventListener('change', (e) => {
+            state.persistentConfig.gameModes.impostorHint = e.target.checked;
+            saveConfig();
+        });
+        trollMode.addEventListener('change', (e) => {
+            state.persistentConfig.gameModes.troll = e.target.checked;
+            saveConfig();
+        });
         detectiveMode.addEventListener('change', (e) => {
-            state.gameModes.detective = e.target.checked;
+            state.persistentConfig.gameModes.detective = e.target.checked;
+            saveConfig();
             updateUI();
         });
+        
         startGameBtn.addEventListener('click', startGame);
-        roleCard.addEventListener('click', () => roleCard.classList.toggle('is-flipped'));
+        
+        roleCard.addEventListener('click', () => {
+            roleCard.classList.add('is-flipped');
+            revealFooter.classList.add('is-visible');
+        });
+
         nextPlayerBtn.addEventListener('click', nextPlayer);
         revealRolesBtn.addEventListener('click', handleRevealRolesClick);
         newGameBtn.addEventListener('click', resetForNewGame);
@@ -360,9 +405,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI UPDATE FUNCTIONS ---
     function updateUI() {
+        // Reflect persistent state in UI
+        impostorHintMode.checked = state.persistentConfig.gameModes.impostorHint;
+        trollMode.checked = state.persistentConfig.gameModes.troll;
+        detectiveMode.checked = state.persistentConfig.gameModes.detective;
+        
         renderPlayerList();
         updateImpostorCountOptions();
         updateStartButtonState();
+        updateCategoryCheckboxes();
+    }
+    
+    function updateCategoryCheckboxes() {
+        document.querySelectorAll('.category-checkbox').forEach(box => {
+            box.checked = state.persistentConfig.selectedCategories.has(box.dataset.category);
+        });
     }
 
     function switchScreen(screenName) {
@@ -372,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPlayerList() {
         playerList.innerHTML = '';
-        state.players.forEach((player, index) => {
+        state.persistentConfig.players.forEach((player, index) => {
             const playerEl = document.createElement('div');
             playerEl.className = 'flex items-center gap-4 py-2';
             playerEl.innerHTML = `
@@ -390,27 +447,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateImpostorCountOptions() {
-        const maxImpostors = state.players.length >= 5 ? 2 : 1;
+        const maxImpostors = state.persistentConfig.players.length >= 5 ? 2 : 1;
         impostorCountSelect.innerHTML = '<option value="1">1</option>';
         if (maxImpostors === 2) {
             impostorCountSelect.innerHTML += '<option value="2">2</option>';
         }
-        if (state.impostorCount > maxImpostors) {
-            state.impostorCount = maxImpostors;
-            impostorCountSelect.value = maxImpostors;
-        }
     }
 
     function updateStartButtonState() {
-        const minPlayers = state.gameModes.detective ? 4 : 3;
-        const isReady = state.players.length >= minPlayers && state.selectedCategories.size > 0;
+        const minPlayers = state.persistentConfig.gameModes.detective ? 4 : 3;
+        const isReady = state.persistentConfig.players.length >= minPlayers && state.persistentConfig.selectedCategories.size > 0;
         startGameBtn.disabled = !isReady;
         startGameBtn.textContent = isReady ? 'Asignar Roles' : `Mín ${minPlayers} jugadores y 1 categoría`;
     }
 
     function populateCategories(newCategory = null) {
         if (newCategory) {
-            WORD_CATEGORIES[newCategory.name] = {}; // Add new category placeholder
+            WORD_CATEGORIES[newCategory.name] = {};
             state.generatedWordsCache[newCategory.name] = newCategory.words;
         }
         const categoryNames = Object.keys(WORD_CATEGORIES);
@@ -425,31 +478,32 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryList.appendChild(label);
         });
         document.querySelectorAll('.category-checkbox').forEach(box => {
-            if (state.selectedCategories.has(box.dataset.category)) {
-                box.checked = true;
-            }
             box.addEventListener('change', (e) => {
                 const category = e.target.dataset.category;
-                if (e.target.checked) state.selectedCategories.add(category);
-                else state.selectedCategories.delete(category);
+                if (e.target.checked) state.persistentConfig.selectedCategories.add(category);
+                else state.persistentConfig.selectedCategories.delete(category);
+                saveConfig();
                 updateStartButtonState();
             });
         });
+        updateCategoryCheckboxes();
     }
 
     // --- PLAYER MANAGEMENT ---
     function addPlayer() {
         const name = playerNameInput.value.trim();
-        if (name && state.players.length < 12) {
-            state.players.push({ name, color: playerColorInput.value, score: 0 });
+        if (name && state.persistentConfig.players.length < 12) {
+            state.persistentConfig.players.push({ name, color: playerColorInput.value });
             playerNameInput.value = '';
             playerNameInput.focus();
+            saveConfig();
             updateUI();
         }
     }
 
     function removePlayer(index) {
-        state.players.splice(index, 1);
+        state.persistentConfig.players.splice(index, 1);
+        saveConfig();
         updateUI();
     }
 
@@ -461,13 +515,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('No se pudo generar la categoría sorpresa.');
             const newCategory = await response.json();
             populateCategories({ name: newCategory.name, words: newCategory.words });
-            state.selectedCategories.clear();
+            state.persistentConfig.selectedCategories.clear();
             document.querySelectorAll('.category-checkbox').forEach(box => box.checked = false);
             const newCheckbox = document.querySelector(`.category-checkbox[data-category="${newCategory.name}"]`);
             if (newCheckbox) {
                 newCheckbox.checked = true;
-                state.selectedCategories.add(newCategory.name);
+                state.persistentConfig.selectedCategories.add(newCategory.name);
             }
+            saveConfig();
             updateStartButtonState();
             alert(`¡Categoría sorpresa "${newCategory.name}" creada y seleccionada!`);
         } catch (error) {
@@ -484,9 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
         checkboxes.forEach(box => {
             box.checked = !allSelected;
             const category = box.dataset.category;
-            if (!allSelected) state.selectedCategories.add(category);
-            else state.selectedCategories.delete(category);
+            if (!allSelected) state.persistentConfig.selectedCategories.add(category);
+            else state.persistentConfig.selectedCategories.delete(category);
         });
+        saveConfig();
         updateStartButtonState();
     }
 
@@ -496,8 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingOverlay.classList.remove('hidden');
         try {
             await assignRoles();
-            state.startingPlayer = state.players[Math.floor(Math.random() * state.players.length)];
-            state.hintForImpostorAvailable = state.gameModes.impostorHint && state.roles[state.startingPlayer.name].role === 'Impostor';
+            state.startingPlayer = state.persistentConfig.players[Math.floor(Math.random() * state.persistentConfig.players.length)];
+            state.hintForImpostorAvailable = state.persistentConfig.gameModes.impostorHint && state.roles[state.startingPlayer.name].role === 'Impostor';
             state.currentPlayerIndex = 0;
             setupRevealScreen();
             switchScreen('reveal');
@@ -510,16 +566,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function assignRoles() {
-        const availableCategories = Array.from(state.selectedCategories);
+        const availableCategories = Array.from(state.persistentConfig.selectedCategories);
         state.secretCategory = availableCategories[Math.floor(Math.random() * availableCategories.length)];
         
-        // --- DYNAMIC WORD GENERATION ---
         let wordsInCat;
-        if (state.generatedWordsCache[state.secretCategory]) {
-            console.log(`Using cached words for ${state.secretCategory}`);
+        if (state.generatedWordsCache[state.secretCategory] && Object.keys(state.generatedWordsCache[state.secretCategory]).length > 0) {
             wordsInCat = state.generatedWordsCache[state.secretCategory];
         } else {
-            console.log(`Fetching new words for ${state.secretCategory}`);
             try {
                 const response = await fetch('/api/generate-category', {
                     method: 'POST',
@@ -531,20 +584,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.generatedWordsCache[state.secretCategory] = newWords;
                 wordsInCat = newWords;
             } catch (error) {
-                // Propagate error to be caught by startGame
                 throw new Error(`Failed to fetch words for category ${state.secretCategory}: ${error.message}`);
             }
         }
-        // --- END DYNAMIC WORD GENERATION ---
 
-        let difficultyPool = (state.difficulty === 'random')
+        const difficulty = difficultySelect.value;
+        let difficultyPool = (difficulty === 'random')
             ? [...wordsInCat.easy, ...wordsInCat.medium, ...wordsInCat.hard]
-            : wordsInCat[state.difficulty];
+            : wordsInCat[difficulty];
         state.secretWord = difficultyPool[Math.floor(Math.random() * difficultyPool.length)];
 
-        let playerNames = state.players.map(p => p.name).sort(() => Math.random() - 0.5);
+        let playerNames = state.persistentConfig.players.map(p => p.name).sort(() => Math.random() - 0.5);
         state.roles = {};
-        const isTrollRound = state.gameModes.troll && Math.random() < 0.15;
+        const isTrollRound = state.persistentConfig.gameModes.troll && Math.random() < 0.15;
         if (isTrollRound) {
             playerNames.forEach(name => state.roles[name] = { role: 'Impostor', isTroll: true });
             state.lastRoundImpostors = [...playerNames];
@@ -552,16 +604,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let potentialImpostors = playerNames.filter(name => !state.lastRoundImpostors.includes(name));
-        if (potentialImpostors.length < state.impostorCount) potentialImpostors = [...playerNames];
+        const impostorCount = parseInt(impostorCountSelect.value);
+        if (potentialImpostors.length < impostorCount) potentialImpostors = [...playerNames];
         const impostors = [];
-        while (impostors.length < state.impostorCount) {
+        while (impostors.length < impostorCount) {
             const idx = Math.floor(Math.random() * potentialImpostors.length);
             impostors.push(potentialImpostors.splice(idx, 1)[0]);
         }
         state.lastRoundImpostors = [...impostors];
 
         let detective = null;
-        if (state.gameModes.detective) {
+        if (state.persistentConfig.gameModes.detective) {
             const potentialDetectives = playerNames.filter(name => !impostors.includes(name));
             detective = potentialDetectives[Math.floor(Math.random() * potentialDetectives.length)];
         }
@@ -574,10 +627,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupRevealScreen() {
-        const player = state.players[state.currentPlayerIndex];
+        const player = state.persistentConfig.players[state.currentPlayerIndex];
         currentPlayerName.textContent = player.name;
         currentPlayerName.style.color = player.color;
         roleCard.classList.remove('is-flipped');
+        revealFooter.classList.remove('is-visible');
         updateCardBack(player);
     }
 
@@ -618,10 +672,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function nextPlayer() {
+        revealFooter.classList.remove('is-visible');
         roleCard.classList.remove('is-flipped');
         setTimeout(() => {
             state.currentPlayerIndex++;
-            if (state.currentPlayerIndex < state.players.length) setupRevealScreen();
+            if (state.currentPlayerIndex < state.persistentConfig.players.length) setupRevealScreen();
             else showGameScreen();
         }, 600);
     }
@@ -660,13 +715,13 @@ document.addEventListener('DOMContentLoaded', () => {
             finalWord.textContent = state.secretWord;
             let impostorHtml = '<p class="text-base text-[var(--text-secondary)]">Los impostores eran:</p><ul class="list-disc list-inside">';
             let detectiveHtml = '';
-            state.players.forEach(player => {
+            state.persistentConfig.players.forEach(player => {
                 const roleInfo = state.roles[player.name];
                 if (roleInfo.role === 'Impostor') impostorHtml += `<li style="color: ${player.color};">${player.name}</li>`;
                 if (roleInfo.role === 'Detective') detectiveHtml = `<p class="text-base text-[var(--text-secondary)] mt-2">El detective era: <strong style="color: ${player.color};">${player.name}</strong></p>`;
             });
             impostorHtml += '</ul>';
-            if (state.players.length > 0 && state.roles[state.players[0].name]?.isTroll) {
+            if (state.persistentConfig.players.length > 0 && state.roles[state.persistentConfig.players[0].name]?.isTroll) {
                impostorHtml = `<p class="text-lg text-[var(--accent-red)] font-bold">¡RONDA TROLL! ¡Todos eran impostores!</p>`;
             }
             finalImpostors.innerHTML = impostorHtml + detectiveHtml;
@@ -679,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetForNewGame() {
-        // DO NOT CLEAR state.generatedWordsCache
+        // Reset only round-specific state
         state.roles = {};
         state.secretWord = '';
         state.secretCategory = '';
@@ -687,12 +742,9 @@ document.addEventListener('DOMContentLoaded', () => {
         state.gameStarted = false;
         state.startingPlayer = null;
         state.hintForImpostorAvailable = false;
-        impostorHintMode.checked = false;
-        trollMode.checked = false;
-        detectiveMode.checked = false;
-        state.gameModes = { impostorHint: false, troll: false, detective: false };
+        
         switchScreen('config');
-        updateUI();
+        // No need to call updateUI() as the config hasn't changed
     }
 
     // --- AI INTEGRATION ---
