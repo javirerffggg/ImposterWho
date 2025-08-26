@@ -273,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
         lastRoundImpostors: [],
         gameStarted: false,
         startingPlayer: null,
-        hintForImpostorAvailable: false,
         persistentConfig: {
             players: [],
             selectedCategories: new Set(),
@@ -476,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- CATEGORY MANAGEMENT ---
-    // BUG FIX: Centralized function to add any new category to the game state.
     function addNewCategoryToGame(categoryData, select = false) {
         populateCategories(categoryData);
         if (select) {
@@ -536,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStartButtonState();
     }
 
-    // --- WORD GENERATION (Refactored) ---
+    // --- WORD GENERATION ---
     async function getWordsForCategory(categoryName, forceFetch = false) {
         if (!forceFetch && state.generatedWordsCache[categoryName] && Object.keys(state.generatedWordsCache[categoryName]).length > 0) {
             return state.generatedWordsCache[categoryName];
@@ -564,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await assignRoles();
             state.startingPlayer = state.persistentConfig.players[Math.floor(Math.random() * state.persistentConfig.players.length)];
-            state.hintForImpostorAvailable = state.persistentConfig.gameModes.impostorHint && state.roles[state.startingPlayer.name].role === 'Impostor';
             state.currentPlayerIndex = 0;
             setupRevealScreen();
             switchScreen('reveal');
@@ -636,7 +633,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (playerRole.role === 'Impostor') {
             content = `<div class="text-center my-auto"><h3 class="text-5xl font-bold uppercase tracking-wider text-[var(--accent-red)]" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5)">IMPOSTOR</h3><p class="text-[var(--text-secondary)] mt-4">Descubre la palabra secreta.</p></div>`;
-            if (state.hintForImpostorAvailable && player.name === state.startingPlayer.name) {
+            
+            const isHintModeActive = state.persistentConfig.gameModes.impostorHint;
+            const isTheStartingPlayer = player.name === state.startingPlayer.name;
+
+            if (isHintModeActive && isTheStartingPlayer) {
                 content += `<button id="get-hint-btn" class="mb-4 bg-white/10 text-white font-semibold py-2 px-4 rounded-lg">Pedir Pista a la IA</button>`;
             }
         } else {
@@ -717,7 +718,6 @@ document.addEventListener('DOMContentLoaded', () => {
         state.currentPlayerIndex = 0;
         state.gameStarted = false;
         state.startingPlayer = null;
-        state.hintForImpostorAvailable = false;
         switchScreen('config');
     }
     
